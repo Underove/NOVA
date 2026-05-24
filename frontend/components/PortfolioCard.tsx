@@ -635,9 +635,9 @@ function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (i
   }
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* 검색 추가 */}
-      <div style={{ padding: "0 16px 12px" }}>
+      <div style={{ padding: "12px 16px 0", flexShrink: 0 }}>
         <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="관심종목 추가…"
           style={{ width: "100%", background: "var(--surface)", borderRadius: 12, padding: "9px 14px", fontSize: 14, border: "0.5px solid var(--sep)", outline: "none", boxShadow: "var(--shadow-sm)" }} />
         {searching && <div style={{ fontSize: 12, color: "var(--label3)", textAlign: "center", marginTop: 6 }}>검색 중…</div>}
@@ -676,7 +676,7 @@ function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (i
           </div>
         </div>
       ) : (
-        <div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
           {items.map((item, i) => {
             const p = prices[item.stock_code];
             return (
