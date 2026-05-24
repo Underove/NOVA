@@ -41,12 +41,12 @@ export function ChatCard() {
     }
   }, []);
 
-  // 브리핑 탭 진입 시 자동 로드 (한 번만)
+  // 브리핑 탭 진입 시 자동 로드 (에러 시 재시도 안 함)
   useEffect(() => {
-    if (activeTab === "briefing" && !briefing && !loadingBriefing) {
+    if (activeTab === "briefing" && !briefing && !loadingBriefing && !briefingError) {
       loadBriefing();
     }
-  }, [activeTab, briefing, loadingBriefing, loadBriefing]);
+  }, [activeTab, briefing, loadingBriefing, loadBriefing, briefingError]);
 
   // 뉴스 탭 진입 시 자동 로드
   useEffect(() => {
