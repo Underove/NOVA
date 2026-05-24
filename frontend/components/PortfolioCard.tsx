@@ -658,9 +658,22 @@ function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (i
 
       {/* 관심종목 목록 */}
       {items.length === 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 8 }}>
-          <div style={{ fontSize: 30 }}>🔍</div>
-          <div style={{ fontSize: 13, color: "var(--label2)", textAlign: "center", lineHeight: 1.6 }}>관심 종목을 추가하면<br />시세를 한눈에 확인할 수 있어요</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 20 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 20,
+            background: "var(--surface2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>관심 종목이 없어요</div>
+            <div style={{ fontSize: 13, color: "var(--label3)", lineHeight: 1.7 }}>
+              관심 종목을 추가하면<br />시세를 한눈에 확인할 수 있어요
+            </div>
+          </div>
         </div>
       ) : (
         <div>
@@ -775,9 +788,22 @@ function DonutChart({ slices }: { slices: { label: string; pct: number; color: s
 function AllocationTab({ items, prices }: { items: PortfolioItem[]; prices: Record<string, StockPrice> }) {
   if (items.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 8 }}>
-        <div style={{ fontSize: 30 }}>📊</div>
-        <div style={{ fontSize: 13, color: "var(--label2)", textAlign: "center", lineHeight: 1.6 }}>종목을 추가하면<br />포트폴리오 배분을 볼 수 있어요</div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 20 }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 20,
+          background: "var(--surface2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />
+          </svg>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>배분 데이터가 없어요</div>
+          <div style={{ fontSize: 13, color: "var(--label3)", lineHeight: 1.7 }}>
+            종목을 추가하면<br />포트폴리오 배분을 볼 수 있어요
+          </div>
+        </div>
       </div>
     );
   }
@@ -1008,9 +1034,32 @@ export function PortfolioCard() {
           </div>
 
           {items.length === 0 && !showAdd && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 10 }}>
-              <div style={{ fontSize: 32 }}>📈</div>
-              <div style={{ fontSize: 13, color: "var(--label2)", textAlign: "center", lineHeight: 1.7 }}>종목을 추가하면 실시간 시세와<br />AI 분석을 바로 확인할 수 있어요</div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 20 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 20,
+                background: "var(--surface2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
+                </svg>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>보유 종목이 없어요</div>
+                <div style={{ fontSize: 13, color: "var(--label3)", lineHeight: 1.7 }}>
+                  종목을 추가하면 실시간 시세와<br />AI 분석을 바로 확인할 수 있어요
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAdd(true)}
+                style={{
+                  padding: "11px 28px", borderRadius: 14,
+                  background: "var(--primary)", color: "white",
+                  fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                종목 추가하기
+              </button>
             </div>
           )}
 

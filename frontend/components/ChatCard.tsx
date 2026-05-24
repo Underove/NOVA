@@ -23,6 +23,7 @@ export function ChatCard() {
   // 뉴스 요약 상태
   const [premarketNews, setPremarketNews] = useState<PremarketNews | null>(null);
   const [loadingNews, setLoadingNews] = useState(false);
+  const [newsLoaded, setNewsLoaded] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,16 +49,16 @@ export function ChatCard() {
     }
   }, [activeTab, briefing, loadingBriefing, loadBriefing, briefingError]);
 
-  // 뉴스 탭 진입 시 자동 로드
+  // 뉴스 탭 진입 시 자동 로드 (한 번만)
   useEffect(() => {
-    if (activeTab === "news" && !premarketNews && !loadingNews) {
+    if (activeTab === "news" && !premarketNews && !loadingNews && !newsLoaded) {
       setLoadingNews(true);
       fetchPremarketNews()
         .then(d => setPremarketNews(d))
         .catch(() => {})
-        .finally(() => setLoadingNews(false));
+        .finally(() => { setLoadingNews(false); setNewsLoaded(true); });
     }
-  }, [activeTab, premarketNews, loadingNews]);
+  }, [activeTab, premarketNews, loadingNews, newsLoaded]);
 
   async function send() {
     const question = input.trim();
@@ -137,6 +138,24 @@ export function ChatCard() {
               >
                 다시 시도
               </button>
+            </div>
+          ) : briefing && !briefing.sections ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", gap: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 18,
+                background: "var(--surface2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
+                </svg>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--label)", marginBottom: 6 }}>포트폴리오가 비어있어요</div>
+                <div style={{ fontSize: 13, color: "var(--label3)", lineHeight: 1.7 }}>
+                  종목을 추가하면 AI가 보유 현황을<br />분석해서 브리핑을 제공해요
+                </div>
+              </div>
             </div>
           ) : briefing ? (
             <BriefingView briefing={briefing} onRefresh={loadBriefing} refreshing={loadingBriefing} />
