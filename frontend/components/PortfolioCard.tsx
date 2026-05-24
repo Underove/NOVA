@@ -21,41 +21,41 @@ import { StockDetailModal } from "./StockDetailModal";
 
 type Tab = "stocks" | "watchlist" | "allocation";
 
-const AVATAR_COLORS: [string, string][] = [
-  ["#FF6B6B", "#fff"], ["#FF9F43", "#fff"], ["#FECA57", "#1a1a2e"], ["#48DBFB", "#1a1a2e"],
-  ["#1DD1A1", "#fff"], ["#54A0FF", "#fff"], ["#5F27CD", "#fff"], ["#EE5A24", "#fff"],
-  ["#009432", "#fff"], ["#0652DD", "#fff"], ["#833471", "#fff"], ["#EA2027", "#fff"],
+const GRADIENTS = [
+  ["#FF6B6B","#FF8E53"], ["#4ECDC4","#44A08D"], ["#667EEA","#764BA2"],
+  ["#F093FB","#F5576C"], ["#4FACFE","#00F2FE"], ["#43E97B","#38F9D7"],
+  ["#FA709A","#FEE140"], ["#A18CD1","#FBC2EB"], ["#FDB99B","#CF8BF3"],
+  ["#FEC89A","#FD7272"], ["#A1C4FD","#C2E9FB"], ["#FDE68A","#F59E0B"],
 ];
-function stockColor(code: string): [string, string] {
+function stockGradient(code: string): [string, string] {
   let h = 0;
   for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) & 0xffffffff;
-  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+  return GRADIENTS[Math.abs(h) % GRADIENTS.length] as [string, string];
 }
 function StockLogo({ code, name, isEditing }: { code: string; name: string; isEditing: boolean }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  const [bg, fg] = isEditing ? ["rgba(0,122,255,0.1)", "var(--primary)"] : stockColor(code);
-  const logoUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/stock/logo/${code}`;
+  const [c1, c2] = stockGradient(code);
+  const id = `g-${code}`;
   return (
-    <div style={{
-      width: 40, height: 40, borderRadius: 12, overflow: "hidden",
-      background: bg,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexShrink: 0, transition: "all 0.15s",
-    }}>
-      {!imgFailed ? (
-        <img
-          src={logoUrl}
-          alt={name}
-          referrerPolicy="no-referrer"
-          onError={() => setImgFailed(true)}
-          style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 12 }}
-        />
-      ) : (
-        <span style={{ fontSize: 15, fontWeight: 800, color: fg, letterSpacing: "-0.02em" }}>
-          {name.slice(0, 1)}
-        </span>
-      )}
-    </div>
+    <svg width={40} height={40} viewBox="0 0 40 40" style={{ flexShrink: 0, borderRadius: 12, transition: "all 0.15s" }}>
+      <defs>
+        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={isEditing ? "#007AFF" : c1} stopOpacity={isEditing ? 0.15 : 1} />
+          <stop offset="100%" stopColor={isEditing ? "#007AFF" : c2} stopOpacity={isEditing ? 0.08 : 1} />
+        </linearGradient>
+      </defs>
+      <rect width={40} height={40} rx={12} fill={`url(#${id})`} />
+      <text
+        x={20} y={26}
+        textAnchor="middle"
+        fontSize={16}
+        fontWeight={800}
+        fontFamily="-apple-system, sans-serif"
+        fill={isEditing ? "#007AFF" : "white"}
+        style={{ userSelect: "none" }}
+      >
+        {name.slice(0, 1)}
+      </text>
+    </svg>
   );
 }
 
