@@ -21,41 +21,18 @@ import { StockDetailModal } from "./StockDetailModal";
 
 type Tab = "stocks" | "watchlist" | "allocation";
 
-const GRADIENTS = [
-  ["#FF6B6B","#FF8E53"], ["#4ECDC4","#44A08D"], ["#667EEA","#764BA2"],
-  ["#F093FB","#F5576C"], ["#4FACFE","#00F2FE"], ["#43E97B","#38F9D7"],
-  ["#FA709A","#FEE140"], ["#A18CD1","#FBC2EB"], ["#FDB99B","#CF8BF3"],
-  ["#FEC89A","#FD7272"], ["#A1C4FD","#C2E9FB"], ["#FDE68A","#F59E0B"],
-];
-function stockGradient(code: string): [string, string] {
-  let h = 0;
-  for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) & 0xffffffff;
-  return GRADIENTS[Math.abs(h) % GRADIENTS.length] as [string, string];
-}
 function StockLogo({ code, name, isEditing }: { code: string; name: string; isEditing: boolean }) {
-  const [c1, c2] = stockGradient(code);
-  const id = `g-${code}`;
   return (
-    <svg width={40} height={40} viewBox="0 0 40 40" style={{ flexShrink: 0, borderRadius: 12, transition: "all 0.15s" }}>
-      <defs>
-        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={isEditing ? "#007AFF" : c1} stopOpacity={isEditing ? 0.15 : 1} />
-          <stop offset="100%" stopColor={isEditing ? "#007AFF" : c2} stopOpacity={isEditing ? 0.08 : 1} />
-        </linearGradient>
-      </defs>
-      <rect width={40} height={40} rx={12} fill={`url(#${id})`} />
-      <text
-        x={20} y={26}
-        textAnchor="middle"
-        fontSize={16}
-        fontWeight={800}
-        fontFamily="-apple-system, sans-serif"
-        fill={isEditing ? "#007AFF" : "white"}
-        style={{ userSelect: "none" }}
-      >
-        {name.slice(0, 1)}
-      </text>
-    </svg>
+    <div style={{
+      width: 40, height: 40, borderRadius: 12,
+      background: isEditing ? "rgba(0,122,255,0.1)" : "var(--surface2)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0, transition: "all 0.15s",
+      fontSize: 16, fontWeight: 800,
+      color: isEditing ? "var(--primary)" : "var(--label2)",
+    }}>
+      {name.slice(0, 1)}
+    </div>
   );
 }
 
