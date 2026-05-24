@@ -1,0 +1,242 @@
+export type BackendStatus = "checking" | "connected" | "error";
+export type ServiceInfo = { service?: string; version?: string };
+
+export type UploadResult = {
+  upload_id: string;
+  filename: string;
+  size_bytes: number;
+  char_count: number;
+  chunk_count: number;
+  vector_db_stored: boolean;
+  vector_db_error: string | null;
+  preview: string;
+  first_chunks: string[];
+};
+
+export type UploadState =
+  | { kind: "idle" }
+  | { kind: "uploading" }
+  | { kind: "done"; result: UploadResult }
+  | { kind: "error"; message: string };
+
+export type SearchMatch = {
+  text: string;
+  distance: number;
+  metadata: Record<string, unknown>;
+};
+
+export type SearchState =
+  | { kind: "idle" }
+  | { kind: "searching" }
+  | { kind: "done"; query: string; matches: SearchMatch[] }
+  | { kind: "error"; message: string };
+
+export type Source = { snippet: string; label: string; distance: number };
+
+export type CompanySynced = { corp_name: string; stock_code: string };
+
+export type ChatTurn = {
+  id: number;
+  question: string;
+  answer: string | null;
+  sources: Source[];
+  error: string | null;
+  companies_synced: CompanySynced[];
+};
+
+export type UploadSummary = {
+  upload_id: string;
+  filename: string;
+  uploaded_at: string;
+  chunk_count: number;
+};
+
+export type Verdict = "지지" | "모순" | "근거없음";
+
+export type FactcheckClaim = {
+  claim: string;
+  verdict: Verdict | string;
+  reasoning: string;
+  sources: Source[];
+};
+
+export type FactcheckResult = {
+  upload_id: string;
+  signal: "red" | "yellow" | "green";
+  score: number;
+  companies_detected: { name: string; stock_code: string }[];
+  claims: FactcheckClaim[];
+};
+
+export type FactcheckState =
+  | { kind: "idle" }
+  | { kind: "running" }
+  | { kind: "done"; result: FactcheckResult }
+  | { kind: "error"; message: string };
+
+// ─── 포트폴리오 ───────────────────────────────────────────────────────────────
+
+export type PortfolioItem = {
+  stock_code: string;
+  corp_name: string;
+  buy_price: number;
+  quantity: number;
+  target_price?: number;
+  stop_loss?: number;
+};
+
+export type WatchlistItem = {
+  stock_code: string;
+  corp_name: string;
+};
+
+export type MarketIndex = {
+  name: string;
+  value: number;
+  change: number;
+  change_pct: number;
+};
+
+export type MarketStatus = {
+  status: "open" | "closed" | "pre";
+  label: string;
+};
+
+export type BriefingHighlight = {
+  corp_name: string;
+  status: string;
+  note: string;
+};
+
+export type BriefingSections = {
+  sentiment: "positive" | "negative" | "neutral";
+  summary: string;
+  highlights: (BriefingHighlight & { change_note?: string })[];
+  action_items?: string[];
+  watch: string;
+  risk?: string;
+};
+
+export type PortfolioStats = {
+  total_pnl_pct: number;
+  stock_count: number;
+  best: { corp_name: string; pnl_pct: number };
+  worst: { corp_name: string; pnl_pct: number };
+};
+
+export type PortfolioBriefing = {
+  briefing: string;
+  sections: BriefingSections | null;
+  generated_at: string;
+  portfolio_stats: PortfolioStats | null;
+};
+
+export type StockPrice = {
+  stock_code: string;
+  current_price: number;
+  change_pct: number;
+  change_amount: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  date: string;
+};
+
+export type Candle = {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
+export type CommentarySections = {
+  sentiment?: "bullish" | "bearish" | "neutral";
+  headline: string;
+  trend: string;
+  signal: string;
+  note: string;
+};
+
+export type StockCommentary = {
+  stock_code: string;
+  corp_name: string;
+  price: StockPrice;
+  commentary: string;
+  commentary_sections: CommentarySections | null;
+};
+
+export type SearchResult = {
+  corp_code: string;
+  corp_name: string;
+  stock_code: string;
+};
+
+export type DisclosureItem = {
+  report_nm: string;
+  rcept_dt: string;
+  flr_nm: string;
+  rcept_no: string;
+  url: string;
+};
+
+export type AnalysisResult = {
+  analysis: string;
+  portfolio_count: number;
+  prices_loaded: number;
+  dart_chunks: number;
+  upload_chunks: number;
+};
+
+export type CrossStatus = "golden" | "dead" | "above" | "below" | "none";
+
+export type FundamentalData = {
+  per: number | null;
+  pbr: number | null;
+  eps: number | null;
+  div: number | null;
+  bps: number | null;
+  market_cap: number | null;
+};
+
+export type TradingFlowItem = {
+  date: string;
+  foreign_net: number;
+  institution_net: number;
+};
+
+export type NewsItem = {
+  title: string;
+  description: string;
+  url: string;
+  date: string;
+};
+
+export type ShortSellingData = {
+  ratio: number | null;
+  trend: { date: string; ratio: number }[];
+};
+
+export type TechnicalData = {
+  current_price: number;
+  ma5: number | null;
+  ma20: number | null;
+  ma60: number | null;
+  cross_5_20: CrossStatus;
+  cross_20_60: CrossStatus;
+  rsi: number | null;
+  macd: number | null;
+  macd_signal: number | null;
+  macd_histogram: number | null;
+  bb_upper: number | null;
+  bb_mid: number | null;
+  bb_lower: number | null;
+  bb_position: number | null;
+  support: number | null;
+  resistance: number | null;
+  high_52w: number;
+  low_52w: number;
+  pos_in_52w_range: number;
+};
