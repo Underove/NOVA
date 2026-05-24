@@ -34,7 +34,7 @@ function stockColor(code: string): [string, string] {
 function StockLogo({ code, name, isEditing }: { code: string; name: string; isEditing: boolean }) {
   const [imgFailed, setImgFailed] = useState(false);
   const [bg, fg] = isEditing ? ["rgba(0,122,255,0.1)", "var(--primary)"] : stockColor(code);
-  const logoUrl = `https://static.toss.im/png-icons/securities/icod-krx-${code}.png`;
+  const logoUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/stock/logo/${code}`;
   return (
     <div style={{
       width: 40, height: 40, borderRadius: 12, overflow: "hidden",
