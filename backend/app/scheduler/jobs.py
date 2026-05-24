@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-BRIEFING_CACHE = DATA_DIR / "briefing_cache.json"
+def _briefing_cache_path(username: str = "") -> Path:
+    suffix = f"_{username}" if username else ""
+    return DATA_DIR / f"briefing_cache{suffix}.json"
 ALERTS_LOG = DATA_DIR / "alerts_log.json"
 NEWS_CACHE = DATA_DIR / "premarket_news_cache.json"
 
@@ -22,12 +24,13 @@ def _now_kst() -> datetime.datetime:
 
 # ─── 브리핑 캐시 ─────────────────────────────────────────────────────────────
 
-def load_briefing_cache() -> dict | None:
+def load_briefing_cache(username: str = "") -> dict | None:
     """오늘 날짜의 캐시된 브리핑 반환. 없거나 오래됐으면 None."""
-    if not BRIEFING_CACHE.exists():
+    path = _briefing_cache_path(username)
+    if not path.exists():
         return None
     try:
-        data = json.loads(BRIEFING_CACHE.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
         cached_date = data.get("cached_date", "")
         today = _now_kst().strftime("%Y-%m-%d")
         return data if cached_date == today else None
@@ -35,9 +38,9 @@ def load_briefing_cache() -> dict | None:
         return None
 
 
-def save_briefing_cache(briefing: dict) -> None:
+def save_briefing_cache(briefing: dict, username: str = "") -> None:
     data = {**briefing, "cached_date": _now_kst().strftime("%Y-%m-%d")}
-    BRIEFING_CACHE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    _briefing_cache_path(username).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def job_generate_briefing() -> None:

@@ -205,7 +205,7 @@ def get_portfolio_briefing(force: bool = False, username: str = Depends(get_curr
 
     if not force:
         from app.scheduler.jobs import load_briefing_cache
-        cached = load_briefing_cache()
+        cached = load_briefing_cache(username)
         if cached:
             return cached
 
@@ -302,7 +302,7 @@ def get_portfolio_briefing(force: bool = False, username: str = Depends(get_curr
     }
     try:
         from app.scheduler.jobs import save_briefing_cache
-        save_briefing_cache(result)
+        save_briefing_cache(result, username)
     except Exception:
         pass
     return result
