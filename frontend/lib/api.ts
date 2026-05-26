@@ -435,7 +435,7 @@ export async function deleteFilter(id: number): Promise<void> {
 export async function fetchCompare(
   codeA: string,
   codeB: string,
-  period: string,
+  period: "1m" | "3m" | "6m" | "1y",
 ): Promise<CompareResponse> {
-  return getJSON(`/api/compare?codes=${codeA},${codeB}&period=${period}`);
+  return getJSON<CompareResponse>(`/api/compare?codes=${codeA},${codeB}&period=${period}`);
 }
