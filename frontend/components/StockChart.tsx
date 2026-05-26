@@ -90,7 +90,10 @@ export function StockChart({ candles, height = 260, buyPrice }: Props) {
         borderVisible: true,
       });
 
-      const candleData = candles.map((c) => ({
+      const validCandles = candles.filter(
+        c => isFinite(c.open) && isFinite(c.high) && isFinite(c.low) && isFinite(c.close)
+      );
+      const candleData = validCandles.map((c) => ({
         time: c.time as `${number}-${number}-${number}`,
         open: c.open,
         high: c.high,
@@ -105,14 +108,14 @@ export function StockChart({ candles, height = 260, buyPrice }: Props) {
           price: buyPrice,
           color: "rgba(255,149,0,0.9)",
           lineWidth: 1,
-          lineStyle: 2, // dashed
+          lineStyle: 2,
           axisLabelVisible: true,
           title: "매수",
         });
       }
 
       // ── MA5 ──
-      const ma5Data = calcMA(candles, 5);
+      const ma5Data = calcMA(validCandles, 5);
       if (ma5Data.length > 0) {
         const ma5 = chart.addSeries(LineSeries, {
           color: "rgba(255,214,10,0.85)",
@@ -125,7 +128,7 @@ export function StockChart({ candles, height = 260, buyPrice }: Props) {
       }
 
       // ── MA20 ──
-      const ma20Data = calcMA(candles, 20);
+      const ma20Data = calcMA(validCandles, 20);
       if (ma20Data.length > 0) {
         const ma20 = chart.addSeries(LineSeries, {
           color: "rgba(191,90,242,0.75)",
@@ -150,9 +153,9 @@ export function StockChart({ candles, height = 260, buyPrice }: Props) {
       });
 
       volumeSeries.setData(
-        candles.map((c) => ({
+        validCandles.map((c) => ({
           time: c.time as `${number}-${number}-${number}`,
-          value: c.volume,
+          value: isFinite(c.volume) ? c.volume : 0,
           color: c.close >= c.open ? "rgba(255,59,48,0.35)" : "rgba(0,122,255,0.35)",
         })),
       );

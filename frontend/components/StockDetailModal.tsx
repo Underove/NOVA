@@ -226,7 +226,7 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                   background: isProfit ? "rgba(255,59,48,0.08)" : "rgba(0,122,255,0.08)",
                   borderRadius: 8, padding: "3px 10px",
                 }}>
-                  {price.change_amount > 0 ? "+" : ""}{fmt(price.change_amount)} ({pctSign(price.change_pct)})
+                  {isFinite(price.change_amount) ? `${price.change_amount > 0 ? "+" : ""}${fmt(price.change_amount)}` : "—"} ({isFinite(price.change_pct) ? pctSign(price.change_pct) : "—"})
                 </div>
               </div>
             ) : (
@@ -745,7 +745,7 @@ function PriceGoalBar({ label, goalPrice, currentPrice, buyPrice, type }: {
   const isTarget = type === "target";
   const color = isTarget ? "var(--red)" : "var(--primary)";
   const bg = isTarget ? "rgba(255,59,48,0.07)" : "rgba(0,122,255,0.07)";
-  const diffPct = ((goalPrice - currentPrice) / currentPrice * 100);
+  const diffPct = currentPrice > 0 ? ((goalPrice - currentPrice) / currentPrice * 100) : null;
   const achieved = isTarget ? currentPrice >= goalPrice : currentPrice <= goalPrice;
 
   const rangeMin = Math.min(buyPrice, currentPrice, goalPrice) * 0.98;
@@ -768,7 +768,7 @@ function PriceGoalBar({ label, goalPrice, currentPrice, buyPrice, type }: {
         {fmt(goalPrice)}<span style={{ fontSize: 11, fontWeight: 500, color: "var(--label3)", marginLeft: 2 }}>원</span>
       </div>
       <div style={{ fontSize: 11, color: "var(--label3)", marginTop: 2 }}>
-        {diffPct > 0 ? "+" : ""}{diffPct.toFixed(1)}%
+        {diffPct !== null ? `${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}%` : "—"}
       </div>
       {/* mini progress */}
       <div style={{ position: "relative", height: 4, background: "rgba(0,0,0,0.06)", borderRadius: 2, marginTop: 8 }}>
@@ -895,8 +895,8 @@ function TechnicalSection({ ta, currentPrice }: { ta: TechnicalData; currentPric
             <span style={{ fontSize: 12, color: "var(--label3)", fontWeight: 500 }}>
               1년 가격 범위 내 위치
             </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: ta.pos_in_52w_range > 70 ? "var(--red)" : ta.pos_in_52w_range < 30 ? "var(--primary)" : "var(--green)" }}>
-              {ta.pos_in_52w_range < 30 ? "바닥권" : ta.pos_in_52w_range > 70 ? "고점권" : "중간권"} · {ta.pos_in_52w_range.toFixed(0)}%
+            <span style={{ fontSize: 12, fontWeight: 700, color: isFinite(ta.pos_in_52w_range) ? (ta.pos_in_52w_range > 70 ? "var(--red)" : ta.pos_in_52w_range < 30 ? "var(--primary)" : "var(--green)") : "var(--label3)" }}>
+              {isFinite(ta.pos_in_52w_range) ? `${ta.pos_in_52w_range < 30 ? "바닥권" : ta.pos_in_52w_range > 70 ? "고점권" : "중간권"} · ${ta.pos_in_52w_range.toFixed(0)}%` : "—"}
             </span>
           </div>
           <RangeBar pct={ta.pos_in_52w_range} />
