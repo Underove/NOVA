@@ -638,12 +638,18 @@ function StockRow({ item, onClick, onEdit, onPriceLoaded, alertCount, realtimePr
 
 function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (item: WatchlistItem) => void; onSelectItem: (item: WatchlistItem) => void }) {
   const [items, setItems] = useState<WatchlistItem[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [prices, setPrices] = useState<Record<string, StockPrice | null>>({});
 
-  useEffect(() => { listWatchlist().then(setItems).catch(() => {}); }, []);
+  useEffect(() => {
+    listWatchlist()
+      .then(setItems)
+      .catch(() => {})
+      .finally(() => setLoadingList(false));
+  }, []);
 
   useEffect(() => {
     items.forEach(item => {
@@ -701,7 +707,23 @@ function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (i
       </div>
 
       {/* 관심종목 목록 */}
-      {items.length === 0 ? (
+      {loadingList ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 16px 0" }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ display: "flex", alignItems: "center", padding: "11px 0", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--surface2)", flexShrink: 0, animation: "pulse 1.4s ease-in-out infinite" }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ width: "55%", height: 14, background: "var(--surface2)", borderRadius: 5, animation: "pulse 1.4s ease-in-out infinite" }} />
+                <div style={{ width: "28%", height: 11, background: "var(--surface2)", borderRadius: 4, animation: "pulse 1.4s ease-in-out infinite", animationDelay: "0.05s" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                <div style={{ width: 54, height: 14, background: "var(--surface2)", borderRadius: 4, animation: "pulse 1.4s ease-in-out infinite" }} />
+                <div style={{ width: 38, height: 11, background: "var(--surface2)", borderRadius: 4, animation: "pulse 1.4s ease-in-out infinite", animationDelay: "0.1s" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "48px 32px", gap: 16 }}>
           <div style={{
             width: 48, height: 48, borderRadius: 15,

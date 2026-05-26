@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { fetchChartData, fetchCommentary, fetchDisclosures, fetchFundamental, fetchNote, fetchShortSelling, fetchStockNews, fetchStockPrice, fetchTechnical, fetchTradingFlow, getSimilarStocks, removePortfolioItem, saveNote, updatePortfolioItem } from "../lib/api";
+import { addWatchlistItem, fetchChartData, fetchCommentary, fetchDisclosures, fetchFundamental, fetchNote, fetchShortSelling, fetchStockNews, fetchStockPrice, fetchTechnical, fetchTradingFlow, getSimilarStocks, removePortfolioItem, saveNote, updatePortfolioItem } from "../lib/api";
 import { isAfterHours, isMarketOpen, isPreMarket, useRealtimePrice } from "../hooks/useRealtimePrice";
 import type { Candle, CommentarySections, CrossStatus, DisclosureItem, FundamentalData, NewsItem, PortfolioItem, ShortSellingData, SimilarItem, StockPrice, TechnicalData, TradingFlowItem } from "../lib/types";
 import { StockChart } from "./StockChart";
@@ -73,6 +73,13 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
   const [saving, setSaving] = useState(false);
 
   const [similarItems, setSimilarItems] = useState<SimilarItem[]>([]);
+  const [watchlistAdded, setWatchlistAdded] = useState(false);
+  const [simWatchlistAdded, setSimWatchlistAdded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setWatchlistAdded(false);
+    setSimWatchlistAdded(new Set());
+  }, [currentItem.stock_code]);
 
   useEffect(() => {
     let ignore = false;
@@ -259,7 +266,7 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
           borderBottom: "0.5px solid var(--sep)",
           background: "var(--bg)",
         }}>
-          {/* 종목명 + 닫기 */}
+          {/* 종목명 + 관심종목 + 닫기 */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, color: "var(--label3)", fontWeight: 500, letterSpacing: "0.01em", marginBottom: 2 }}>
@@ -269,19 +276,42 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                 {currentItem.corp_name}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: "50%",
-                background: "var(--surface2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "var(--label3)", flexShrink: 0,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={async () => {
+                  if (watchlistAdded) return;
+                  try {
+                    await addWatchlistItem({ stock_code: currentItem.stock_code, corp_name: currentItem.corp_name });
+                    setWatchlistAdded(true);
+                  } catch {}
+                }}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: watchlistAdded ? "var(--primary)" : "var(--surface2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: watchlistAdded ? "white" : "var(--label3)",
+                  flexShrink: 0,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={watchlistAdded ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </button>
+              <button
+                onClick={onClose}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: "var(--surface2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "var(--label3)", flexShrink: 0,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* 현재가 */}
@@ -804,28 +834,56 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                 유사종목
               </p>
               <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-                {similarItems.map(sim => (
-                  <button
-                    key={sim.stock_code}
-                    onClick={() => {
-                      setCurrentItem({ stock_code: sim.stock_code, corp_name: sim.corp_name, buy_price: 0, quantity: 0 });
-                    }}
-                    style={{
-                      flexShrink: 0,
-                      padding: "8px 12px",
-                      borderRadius: 12,
-                      background: "var(--surface3)",
-                      border: "1px solid var(--sep)",
-                      display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-start",
-                    }}
-                  >
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--label)" }}>{sim.corp_name}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--label2)" }}>
-                      {sim.sector}
-                      {sim.per != null ? ` · PER ${sim.per}` : ""}
-                    </span>
-                  </button>
-                ))}
+                {similarItems.map(sim => {
+                  const isAdded = simWatchlistAdded.has(sim.stock_code);
+                  return (
+                    <div
+                      key={sim.stock_code}
+                      style={{
+                        flexShrink: 0,
+                        padding: "8px 10px 8px 12px",
+                        borderRadius: 12,
+                        background: "var(--surface3)",
+                        border: "1px solid var(--sep)",
+                        display: "flex", flexDirection: "column", gap: 6,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        setCurrentItem({ stock_code: sim.stock_code, corp_name: sim.corp_name, buy_price: 0, quantity: 0 });
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--label)" }}>{sim.corp_name}</span>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (isAdded) return;
+                            try {
+                              await addWatchlistItem({ stock_code: sim.stock_code, corp_name: sim.corp_name });
+                              setSimWatchlistAdded(prev => new Set([...prev, sim.stock_code]));
+                            } catch {}
+                          }}
+                          style={{
+                            width: 22, height: 22, borderRadius: "50%",
+                            background: isAdded ? "var(--primary)" : "var(--surface2)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: isAdded ? "white" : "var(--label3)",
+                            flexShrink: 0,
+                            transition: "background 0.15s, color 0.15s",
+                          }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill={isAdded ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--label2)" }}>
+                        {sim.sector}
+                        {sim.per != null ? ` · PER ${sim.per}` : ""}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
