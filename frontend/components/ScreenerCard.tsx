@@ -118,6 +118,7 @@ export function ScreenerCard() {
         borderRadius: 20,
         padding: "16px 16px 20px",
         display: "flex", flexDirection: "column", gap: 16,
+        minWidth: 0, width: "100%",
       }}>
         {/* 필터 저장 버튼 */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -168,7 +169,7 @@ export function ScreenerCard() {
               onKeyDown={e => e.key === "Enter" && handleSaveFilter()}
               placeholder="필터 이름 입력 후 엔터"
               style={{
-                flex: 1, padding: "8px 12px", borderRadius: 10,
+                flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 10,
                 background: "var(--surface3)", border: "1px solid var(--sep)",
                 fontSize: 13, color: "var(--label)",
               }}
@@ -218,14 +219,14 @@ export function ScreenerCard() {
                 placeholder="예: 15"
                 type="number"
                 style={{
-                  padding: "7px 10px", borderRadius: 10,
+                  width: "100%", padding: "7px 10px", borderRadius: 10,
                   background: "var(--surface3)", border: "1px solid var(--sep)",
                   fontSize: 13, color: "var(--label)",
                 }}
               />
             </label>
           </div>
-          <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 700, marginTop: 2 }}>RSI 구간 <span style={{ fontWeight: 400 }}>(30 이하 = 과매도, 70 이상 = 과매수)</span></span>
+          <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 700, marginTop: 2, wordBreak: "keep-all" }}>RSI 구간 <span style={{ fontWeight: 400 }}>(30↓과매도 · 70↑과매수)</span></span>
           <div style={{ display: "flex", gap: 8 }}>
             <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
               <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600 }}>최소</span>
@@ -235,7 +236,7 @@ export function ScreenerCard() {
                 placeholder="예: 0"
                 type="number"
                 style={{
-                  padding: "7px 10px", borderRadius: 10,
+                  width: "100%", padding: "7px 10px", borderRadius: 10,
                   background: "var(--surface3)", border: "1px solid var(--sep)",
                   fontSize: 13, color: "var(--label)",
                 }}
@@ -249,7 +250,7 @@ export function ScreenerCard() {
                 placeholder="예: 30"
                 type="number"
                 style={{
-                  padding: "7px 10px", borderRadius: 10,
+                  width: "100%", padding: "7px 10px", borderRadius: 10,
                   background: "var(--surface3)", border: "1px solid var(--sep)",
                   fontSize: 13, color: "var(--label)",
                 }}
