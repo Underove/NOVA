@@ -8,6 +8,7 @@ SYSTEM_INSTRUCTION = """당신은 한국 주식 정보를 분석하는 AI 비서
 자료 출처:
 - "DART 공시" 또는 "DART 공시 본문": 금융감독원 공식 공시. 사실(fact)로 취급.
 - "사용자 업로드": 사용자가 올린 투자 자료·리포트·서적. 내용을 분석 근거로 활용하되 출처 명시.
+- "사용자 포트폴리오": 사용자가 실제 보유한 종목·수량·매수단가·현재가·손익. 사실로 취급.
 
 답변 규칙:
 1. [참고 자료]의 내용을 근거로 분석. 근거 사용 시 [자료 N] 형식으로 본문에 표기.
@@ -18,6 +19,7 @@ SYSTEM_INSTRUCTION = """당신은 한국 주식 정보를 분석하는 AI 비서
 6. 별표(*) 금지. 소제목(##) 금지. 평문과 번호 목록만 허용.
 7. 종목·섹터 분석은 근거 기반으로 자유롭게 제시. 미래 수익 보장 표현 금지.
 8. 종목 추천·분석 요청에는 보유 데이터(공시, 시세, 업로드 자료)를 최대한 활용해 구체적으로 답변.
+9. 포트폴리오 질문 시 [사용자 포트폴리오] 데이터를 기반으로 수익률·손익·현황을 구체적으로 분석.
 
 답변 형식:
 - 첫 문장에 핵심 결론 또는 요점을 먼저 제시.
@@ -65,10 +67,11 @@ def _query_collection(collection, question: str, n: int) -> tuple[list[str], lis
     )
 
 
-def answer_with_context(question: str, n_chunks: int = 5) -> dict:
+def answer_with_context(question: str, n_chunks: int = 5, portfolio_context: str | None = None) -> dict:
     """trusted 우선 쿼터 + user_uploads 보조로 검색 → 거리순 정렬 → LLM 답변.
 
     질문에 새 회사명이 있으면 검색 전에 자동 sync.
+    portfolio_context가 있으면 포트폴리오 데이터를 프롬프트에 주입.
     """
     newly_synced: list[dict] = []
     try:
@@ -83,7 +86,7 @@ def answer_with_context(question: str, n_chunks: int = 5) -> dict:
         get_trusted_collection(), question, n_chunks
     )
 
-    if not user_chunks and not trusted_chunks:
+    if not user_chunks and not trusted_chunks and not portfolio_context:
         return {
             "answer": "아직 분석 가능한 자료가 없습니다. PDF를 업로드하거나 DART 공시를 수집해주세요.",
             "sources": [],
@@ -114,7 +117,8 @@ def answer_with_context(question: str, n_chunks: int = 5) -> dict:
     news_ctx = news_to_context(news_items, label_prefix="웹 뉴스")
 
     rag_ctx = build_context(chunks, metadatas)
-    full_ctx = f"{rag_ctx}\n\n---\n\n{news_ctx}" if news_ctx else rag_ctx
+    parts = [p for p in [portfolio_context, rag_ctx, news_ctx] if p]
+    full_ctx = "\n\n---\n\n".join(parts)
 
     prompt = f"[참고 자료]\n{full_ctx}\n\n[질문]\n{question}"
     answer = generate_answer(prompt, system_instruction=SYSTEM_INSTRUCTION)
