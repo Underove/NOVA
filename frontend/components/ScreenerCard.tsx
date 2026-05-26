@@ -39,6 +39,7 @@ export function ScreenerCard() {
   const [filterName, setFilterName]   = useState("");
   const [saving, setSaving]           = useState(false);
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
+  const latestReq = React.useRef(0);
 
   useEffect(() => {
     getSavedFilters().then(setSavedFilters).catch(() => {});
@@ -55,15 +56,16 @@ export function ScreenerCard() {
   }
 
   async function run() {
+    const reqId = ++latestReq.current;
     setLoading(true);
     setSearched(true);
     try {
       const data = await screenStocks(buildParams());
-      setResults(data);
+      if (reqId === latestReq.current) setResults(data);
     } catch {
-      setResults([]);
+      if (reqId === latestReq.current) setResults([]);
     } finally {
-      setLoading(false);
+      if (reqId === latestReq.current) setLoading(false);
     }
   }
 
@@ -91,8 +93,12 @@ export function ScreenerCard() {
   }
 
   async function handleDeleteFilter(id: number) {
-    await deleteFilter(id).catch(() => {});
-    setSavedFilters(prev => prev.filter(f => f.id !== id));
+    try {
+      await deleteFilter(id);
+      setSavedFilters(prev => prev.filter(f => f.id !== id));
+    } catch {
+      // server delete failed; keep filter in list
+    }
   }
 
   function openDetail(item: ScreenerItem) {
@@ -141,10 +147,11 @@ export function ScreenerCard() {
                   }}
                 >{f.name}</button>
                 <button
+                  aria-label={`${f.name} 필터 삭제`}
                   onClick={() => handleDeleteFilter(f.id)}
                   style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--surface3)", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="2.5" strokeLinecap="round">
+                  <svg aria-hidden="true" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
