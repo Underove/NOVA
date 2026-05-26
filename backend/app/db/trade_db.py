@@ -53,6 +53,30 @@ def init_db() -> None:
                 ai_memo     TEXT NOT NULL DEFAULT '',
                 updated_at  TEXT NOT NULL DEFAULT ''
             );
+
+            CREATE TABLE IF NOT EXISTS screener_snapshot (
+                stock_code  TEXT    PRIMARY KEY,
+                corp_name   TEXT    NOT NULL,
+                sector      TEXT,
+                market_cap  INTEGER,
+                per         REAL,
+                pbr         REAL,
+                momentum_20d REAL,
+                rsi         REAL,
+                ma_status   TEXT,
+                has_ta      INTEGER NOT NULL DEFAULT 0,
+                updated_at  TEXT    NOT NULL DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS saved_screener_filters (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                username    TEXT    NOT NULL,
+                name        TEXT    NOT NULL,
+                filter_json TEXT    NOT NULL,
+                created_at  TEXT    NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_saved_filters_user
+                ON saved_screener_filters(username);
         """)
 
 
@@ -236,3 +260,103 @@ def update_ai_memo(username: str, memo: str) -> None:
                    updated_at=excluded.updated_at""",
             (username, memo, _kst_now()),
         )
+
+
+def upsert_screener_snapshot(rows: list[dict]) -> None:
+    """전 종목 스냅샷 배치 upsert. rows: list of dicts with screener_snapshot columns."""
+    today = _kst_now()[:10]
+    with _conn() as con:
+        con.executemany(
+            """INSERT OR REPLACE INTO screener_snapshot
+               (stock_code, corp_name, sector, market_cap, per, pbr,
+                momentum_20d, rsi, ma_status, has_ta, updated_at)
+               VALUES (:stock_code, :corp_name, :sector, :market_cap, :per, :pbr,
+                       :momentum_20d, :rsi, :ma_status, :has_ta, :updated_at)""",
+            [{**r, "updated_at": today} for r in rows],
+        )
+
+
+def query_screener(
+    sector: str | None = None,
+    market_cap_min: int | None = None,
+    market_cap_max: int | None = None,
+    per_max: float | None = None,
+    pbr_max: float | None = None,
+    rsi_min: float | None = None,
+    rsi_max: float | None = None,
+    ma_status: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """조건에 맞는 종목을 has_ta DESC 정렬로 최대 limit개 반환."""
+    clauses = []
+    params: list = []
+    if sector:
+        clauses.append("sector = ?")
+        params.append(sector)
+    if market_cap_min is not None:
+        clauses.append("market_cap >= ?")
+        params.append(market_cap_min)
+    if market_cap_max is not None:
+        clauses.append("market_cap <= ?")
+        params.append(market_cap_max)
+    if per_max is not None:
+        clauses.append("(per IS NULL OR per <= ?)")
+        params.append(per_max)
+    if pbr_max is not None:
+        clauses.append("(pbr IS NULL OR pbr <= ?)")
+        params.append(pbr_max)
+    if rsi_min is not None:
+        clauses.append("rsi >= ?")
+        params.append(rsi_min)
+    if rsi_max is not None:
+        clauses.append("rsi <= ?")
+        params.append(rsi_max)
+    if ma_status:
+        clauses.append("ma_status = ?")
+        params.append(ma_status)
+
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    with _conn() as con:
+        rows = con.execute(
+            f"SELECT * FROM screener_snapshot {where} ORDER BY has_ta DESC, market_cap DESC LIMIT ?",
+            params,
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_top_market_cap_codes(n: int = 300) -> list[str]:
+    """시총 상위 n개 종목코드 반환."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT stock_code FROM screener_snapshot ORDER BY market_cap DESC LIMIT ?",
+            (n,),
+        ).fetchall()
+    return [r["stock_code"] for r in rows]
+
+
+def save_filter(username: str, name: str, filter_json: str) -> int:
+    with _conn() as con:
+        cur = con.execute(
+            "INSERT INTO saved_screener_filters (username, name, filter_json, created_at) VALUES (?, ?, ?, ?)",
+            (username, name, filter_json, _kst_now()),
+        )
+        return cur.lastrowid or 0
+
+
+def get_saved_filters(username: str) -> list[dict]:
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT * FROM saved_screener_filters WHERE username = ? ORDER BY created_at DESC",
+            (username,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def delete_filter(filter_id: int, username: str) -> bool:
+    with _conn() as con:
+        cur = con.execute(
+            "DELETE FROM saved_screener_filters WHERE id = ? AND username = ?",
+            (filter_id, username),
+        )
+        return cur.rowcount > 0
