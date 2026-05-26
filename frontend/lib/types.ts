@@ -290,6 +290,7 @@ export type ScreenerParams = {
   sector?:         string;
   market_cap_min?: number;
   market_cap_max?: number;
+  per_min?:        number;
   per_max?:        number;
   pbr_max?:        number;
   rsi_min?:        number;

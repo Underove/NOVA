@@ -137,9 +137,13 @@ TOOL_DECLARATIONS = [
                     "enum": ["golden", "dead", "above", "below"],
                     "description": "MA5/20 상태. golden=골든크로스, dead=데드크로스",
                 },
+                "per_min": {
+                    "type": "NUMBER",
+                    "description": "PER 하한값. 고성장주 필터 시 사용. 예: 60 이상",
+                },
                 "per_max": {
                     "type": "NUMBER",
-                    "description": "PER 상한값. 저PER 필터 시 사용",
+                    "description": "PER 상한값. 저PER 필터 시 사용. 예: 15 이하",
                 },
                 "market_cap_max": {
                     "type": "NUMBER",

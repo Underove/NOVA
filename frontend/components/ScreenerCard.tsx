@@ -23,10 +23,12 @@ const MA_OPTIONS: { value: ScreenerParams["ma_status"]; label: string }[] = [
   { value: "below",    label: "단기 하락 중" },
 ];
 
-const PER_PRESETS = [
-  { label: "가치주  ≤10",  value: "10" },
-  { label: "저평가  ≤15",  value: "15" },
-  { label: "성장주  ≤30",  value: "30" },
+const PER_PRESETS: { label: string; min: string; max: string }[] = [
+  { label: "초저평가  ≤10",  min: "",    max: "10"  },
+  { label: "저평가  10–20",  min: "10",  max: "20"  },
+  { label: "적정  20–40",    min: "20",  max: "40"  },
+  { label: "성장  40–100",   min: "40",  max: "100" },
+  { label: "고성장  ≥100",   min: "100", max: ""    },
 ];
 
 const RSI_PRESETS = [
@@ -39,6 +41,7 @@ function fmt(n: number) { return n.toLocaleString("ko-KR"); }
 
 export function ScreenerCard() {
   const [sector, setSector]           = useState<string | null>(null);
+  const [perMin, setPerMin]           = useState("");
   const [perMax, setPerMax]           = useState("");
   const [rsiMin, setRsiMin]           = useState("");
   const [rsiMax, setRsiMax]           = useState("");
@@ -59,10 +62,11 @@ export function ScreenerCard() {
 
   function buildParams(): ScreenerParams {
     return {
-      ...(sector ? { sector } : {}),
-      ...(perMax  ? { per_max:  parseFloat(perMax)  } : {}),
-      ...(rsiMin  ? { rsi_min:  parseFloat(rsiMin)  } : {}),
-      ...(rsiMax  ? { rsi_max:  parseFloat(rsiMax)  } : {}),
+      ...(sector  ? { sector } : {}),
+      ...(perMin  ? { per_min: parseFloat(perMin) } : {}),
+      ...(perMax  ? { per_max: parseFloat(perMax) } : {}),
+      ...(rsiMin  ? { rsi_min: parseFloat(rsiMin) } : {}),
+      ...(rsiMax  ? { rsi_max: parseFloat(rsiMax) } : {}),
       ...(maStatus ? { ma_status: maStatus } : {}),
     };
   }
@@ -84,6 +88,7 @@ export function ScreenerCard() {
   function applyFilter(f: SavedFilter) {
     const p = f.params;
     setSector(p.sector ?? null);
+    setPerMin(p.per_min != null ? String(p.per_min) : "");
     setPerMax(p.per_max != null ? String(p.per_max) : "");
     setRsiMin(p.rsi_min != null ? String(p.rsi_min) : "");
     setRsiMax(p.rsi_max != null ? String(p.rsi_max) : "");
@@ -219,16 +224,19 @@ export function ScreenerCard() {
           })}
         </div>
 
-        {/* 가치 지표 */}
+        {/* PER */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 700 }}>PER <span style={{ fontWeight: 400 }}>(낮을수록 저평가)</span></span>
+          <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 700 }}>PER <span style={{ fontWeight: 400 }}>(낮을수록 저평가 · 높을수록 성장 기대)</span></span>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {PER_PRESETS.map(p => {
-              const active = perMax === p.value;
+              const active = perMin === p.min && perMax === p.max;
               return (
                 <button
-                  key={p.value}
-                  onClick={() => setPerMax(active ? "" : p.value)}
+                  key={p.label}
+                  onClick={() => {
+                    if (active) { setPerMin(""); setPerMax(""); }
+                    else { setPerMin(p.min); setPerMax(p.max); }
+                  }}
                   style={{
                     padding: "5px 12px", borderRadius: 100,
                     fontSize: 11, fontWeight: active ? 700 : 600,
@@ -241,17 +249,30 @@ export function ScreenerCard() {
               );
             })}
           </div>
-          <input
-            value={perMax}
-            onChange={e => setPerMax(e.target.value)}
-            placeholder="직접 입력 (예: 20)"
-            type="number"
-            style={{
-              width: "100%", padding: "7px 10px", borderRadius: 10,
-              background: "var(--surface3)", border: "1px solid var(--sep)",
-              fontSize: 13, color: "var(--label)",
-            }}
-          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={perMin}
+              onChange={e => setPerMin(e.target.value)}
+              placeholder="최소"
+              type="number"
+              style={{
+                flex: 1, width: "100%", padding: "7px 10px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+            <input
+              value={perMax}
+              onChange={e => setPerMax(e.target.value)}
+              placeholder="최대"
+              type="number"
+              style={{
+                flex: 1, width: "100%", padding: "7px 10px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+          </div>
         </div>
 
         {/* RSI */}

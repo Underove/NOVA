@@ -25,6 +25,7 @@ class ScreenerRequest(BaseModel):
     sector:         str | None   = None
     market_cap_min: int | None   = None
     market_cap_max: int | None   = None
+    per_min:        float | None = None
     per_max:        float | None = None
     pbr_max:        float | None = None
     rsi_min:        float | None = None
@@ -48,6 +49,7 @@ def screen_stocks_endpoint(
         sector=req.sector,
         market_cap_min=req.market_cap_min,
         market_cap_max=req.market_cap_max,
+        per_min=req.per_min,
         per_max=req.per_max,
         pbr_max=req.pbr_max,
         rsi_min=req.rsi_min,

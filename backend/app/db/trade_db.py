@@ -280,6 +280,7 @@ def query_screener(
     sector: str | None = None,
     market_cap_min: int | None = None,
     market_cap_max: int | None = None,
+    per_min: float | None = None,
     per_max: float | None = None,
     pbr_max: float | None = None,
     rsi_min: float | None = None,
@@ -299,8 +300,13 @@ def query_screener(
     if market_cap_max is not None:
         clauses.append("market_cap <= ?")
         params.append(market_cap_max)
+    if per_min is not None or per_max is not None:
+        clauses.append("per IS NOT NULL AND per > 0")
+    if per_min is not None:
+        clauses.append("per >= ?")
+        params.append(per_min)
     if per_max is not None:
-        clauses.append("per IS NOT NULL AND per > 0 AND per <= ?")
+        clauses.append("per <= ?")
         params.append(per_max)
     if pbr_max is not None:
         clauses.append("pbr IS NOT NULL AND pbr > 0 AND pbr <= ?")
