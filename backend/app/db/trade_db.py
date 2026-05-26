@@ -499,7 +499,7 @@ def delete_alert(username: str, alert_id: str) -> bool:
 
 def cleanup_old_alerts() -> None:
     """30일 이상 된 read=1 알림 삭제."""
-    cutoff = (datetime.now(timezone.utc) + timedelta(hours=9) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
+    cutoff = (datetime.now(timezone.utc) + _KST - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
     with _conn() as con:
         con.execute("DELETE FROM alerts WHERE read=1 AND created_at < ?", (cutoff,))
 
@@ -509,6 +509,7 @@ def get_unread_alert_counts(username: str, stock_codes: list[str]) -> dict[str, 
     if not stock_codes:
         return {}
     placeholders = ",".join("?" * len(stock_codes))
+    # placeholders contains only "?" chars — no user data in SQL string
     with _conn() as con:
         rows = con.execute(
             f"""SELECT stock_code, COUNT(*) as cnt
