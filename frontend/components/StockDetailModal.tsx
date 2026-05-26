@@ -75,9 +75,11 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
   const [similarItems, setSimilarItems] = useState<SimilarItem[]>([]);
 
   useEffect(() => {
+    let ignore = false;
     getSimilarStocks(currentItem.stock_code)
-      .then(setSimilarItems)
-      .catch(() => {});
+      .then(data => { if (!ignore) setSimilarItems(data); })
+      .catch(() => { if (!ignore) console.warn("유사종목 조회 실패"); });
+    return () => { ignore = true; };
   }, [currentItem.stock_code]);
 
   // ── 가격: REST 초기 로드 + 장외 60초 폴링 ─────────────────────────────────
@@ -806,7 +808,6 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                   <button
                     key={sim.stock_code}
                     onClick={() => {
-                      setSimilarItems([]);
                       setCurrentItem({ stock_code: sim.stock_code, corp_name: sim.corp_name, buy_price: 0, quantity: 0 });
                     }}
                     style={{
