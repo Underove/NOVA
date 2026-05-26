@@ -132,13 +132,20 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
     loadCommentary();
   }, [loadCommentary]);
 
-  // ── 기술지표: 최초 로드만 ────────────────────────────────────────────────
-  useEffect(() => {
+  // ── 기술지표: 최초 로드 + 정규장 5분 자동갱신 + 수동 새로고침 ──────────────
+  const loadTechnical = useCallback(async () => {
     setLoadingTechnical(true);
     fetchTechnical(currentItem.stock_code)
       .then(setTechnical).catch(() => setTechnical(null))
       .finally(() => setLoadingTechnical(false));
   }, [currentItem.stock_code]);
+
+  useEffect(() => {
+    loadTechnical();
+    if (!isMarketOpen()) return;
+    const id = setInterval(loadTechnical, 5 * 60_000);
+    return () => clearInterval(id);
+  }, [loadTechnical]);
 
   useEffect(() => {
     setLoadingDisclosures(true);
@@ -600,6 +607,16 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
               ) : null}
 
               {/* ── 기술적 지표 ── */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 2px 0" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--label)" }}>기술적 지표</span>
+                <button
+                  onClick={loadTechnical}
+                  disabled={loadingTechnical}
+                  style={{ fontSize: 11, color: "var(--primary)", fontWeight: 700, padding: "5px 12px", background: "rgba(0,122,255,0.09)", borderRadius: 9, border: "none", cursor: "pointer" }}
+                >
+                  {loadingTechnical ? "…" : "새로고침"}
+                </button>
+              </div>
               {loadingTechnical ? (
                 <TechnicalSkeleton />
               ) : technical ? (
