@@ -1,0 +1,119 @@
+<h2>전체 UI 방향성 — 어느 쪽이 끌려?</h2>
+<p class="subtitle">현재 주식나침반 대시보드의 전체 느낌을 결정해. 세 가지 방향 중 하나를 골라줘.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="A" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#F2F2F7;border-radius:12px;padding:14px;font-family:-apple-system,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;font-weight:800;color:#1C1C1E;">주식나침반</span>
+          <div style="display:flex;gap:6px;">
+            <span style="background:#34C759;color:white;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;">장중</span>
+            <span style="background:#FF3B30;color:white;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;">KOSPI +0.8%</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:white;border-radius:14px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size:9px;color:#8E8E93;margin-bottom:6px;font-weight:600;">삼성전자</div>
+            <div style="font-size:16px;font-weight:800;color:#FF3B30;">299,000</div>
+            <div style="font-size:9px;color:#FF3B30;font-weight:700;margin-top:2px;">+2.22%</div>
+            <div style="height:28px;margin-top:6px;background:linear-gradient(135deg,rgba(255,59,48,0.1) 0%,rgba(255,59,48,0.05) 100%);border-radius:6px;display:flex;align-items:flex-end;padding:0 2px 2px;">
+              <div style="display:flex;gap:1px;align-items:flex-end;width:100%;">
+                <div style="flex:1;background:rgba(255,59,48,0.3);border-radius:2px;height:8px;"></div>
+                <div style="flex:1;background:rgba(255,59,48,0.3);border-radius:2px;height:12px;"></div>
+                <div style="flex:1;background:rgba(255,59,48,0.3);border-radius:2px;height:10px;"></div>
+                <div style="flex:1;background:rgba(255,59,48,0.3);border-radius:2px;height:14px;"></div>
+                <div style="flex:1;background:rgba(255,59,48,0.3);border-radius:2px;height:16px;"></div>
+                <div style="flex:1;background:#FF3B30;border-radius:2px;height:20px;"></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:white;border-radius:14px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size:9px;color:#8E8E93;margin-bottom:4px;font-weight:600;">AI 브리핑</div>
+            <div style="font-size:9px;color:#1C1C1E;line-height:1.5;font-weight:500;">오늘 포트폴리오 전반적 강세. 삼성전자 52주 고점 근접...</div>
+            <div style="margin-top:8px;background:#F2F2F7;border-radius:8px;padding:6px;font-size:8px;color:#8E8E93;">💬 AI에게 물어보기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — iOS 클린 (현재 방향 정제)</h3>
+      <p>현재 디자인을 더 정교하게 — 카드 간격·타이포 위계 개선, 미니 스파크라인 추가. 익숙한 느낌 유지하면서 완성도를 높임.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="B" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0D0D0F;border-radius:12px;padding:14px;font-family:-apple-system,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;font-weight:800;color:#F5F5F7;letter-spacing:-0.04em;">주식나침반</span>
+          <div style="display:flex;gap:6px;">
+            <span style="background:rgba(52,199,89,0.15);color:#34C759;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;border:1px solid rgba(52,199,89,0.3);">● 장중</span>
+            <span style="background:rgba(255,59,48,0.12);color:#FF6B6B;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;border:1px solid rgba(255,59,48,0.2);">KOSPI +0.8%</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:#1A1A1E;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:9px;color:#636366;margin-bottom:6px;font-weight:600;letter-spacing:0.05em;">005930</div>
+            <div style="font-size:16px;font-weight:800;color:#FF6B6B;letter-spacing:-0.03em;">299,000</div>
+            <div style="font-size:9px;color:#FF6B6B;font-weight:700;margin-top:2px;">▲ +2.22%</div>
+            <div style="height:28px;margin-top:6px;position:relative;">
+              <svg viewBox="0 0 60 28" style="width:100%;height:100%;">
+                <polyline points="0,22 10,20 20,18 30,15 40,12 50,8 60,4" fill="none" stroke="#FF6B6B" stroke-width="1.5"/>
+                <polygon points="0,22 10,20 20,18 30,15 40,12 50,8 60,4 60,28 0,28" fill="rgba(255,107,107,0.1)"/>
+              </svg>
+            </div>
+          </div>
+          <div style="background:#1A1A1E;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:9px;color:#636366;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;">AI BRIEF</div>
+            <div style="font-size:9px;color:#EBEBF5;line-height:1.5;font-weight:400;">강세 흐름. 삼성전자 52주 고점 근접, 단기 차익 실현 주의...</div>
+            <div style="margin-top:8px;background:rgba(0,122,255,0.15);border-radius:6px;padding:5px 7px;font-size:8px;color:#5AC8FA;border:1px solid rgba(0,122,255,0.25);">Ask AI →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 다크 트레이딩 터미널</h3>
+      <p>Bloomberg/Robinhood 느낌. 어두운 배경에 데이터가 선명하게 부각. 밤에도 눈 안 피로하고 전문적인 느낌.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="C" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#FAFAFA;border-radius:12px;padding:14px;font-family:-apple-system,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:800;color:#111;letter-spacing:-0.05em;">주식나침반</span>
+          <span style="font-size:9px;color:#888;background:#EFEFEF;padding:3px 8px;border-radius:6px;">KOSPI 2,850 ▲</span>
+        </div>
+        <div style="background:white;border-radius:12px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:10px;font-weight:700;color:#111;">포트폴리오 요약</span>
+            <span style="font-size:9px;color:#34C759;font-weight:700;background:rgba(52,199,89,0.1);padding:2px 6px;border-radius:4px;">+8.4% 수익</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;">
+            <div><div style="font-size:13px;font-weight:800;color:#FF3B30;">299K</div><div style="font-size:7px;color:#888;margin-top:1px;">삼성전자</div><div style="height:2px;background:#FF3B30;border-radius:1px;margin-top:3px;opacity:0.7;"></div></div>
+            <div><div style="font-size:13px;font-weight:800;color:#007AFF;">87K</div><div style="font-size:7px;color:#888;margin-top:1px;">SK하이닉스</div><div style="height:2px;background:#007AFF;border-radius:1px;margin-top:3px;opacity:0.7;"></div></div>
+            <div><div style="font-size:13px;font-weight:800;color:#FF9500;">185K</div><div style="font-size:7px;color:#888;margin-top:1px;">LG에너지</div><div style="height:2px;background:#FF9500;border-radius:1px;margin-top:3px;opacity:0.7;"></div></div>
+            <div><div style="font-size:13px;font-weight:800;color:#AF52DE;">42K</div><div style="font-size:7px;color:#888;margin-top:1px;">카카오</div><div style="height:2px;background:#AF52DE;border-radius:1px;margin-top:3px;opacity:0.7;"></div></div>
+          </div>
+        </div>
+        <div style="background:white;border-radius:12px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+          <div style="font-size:9px;color:#888;margin-bottom:5px;font-weight:600;">오늘의 AI 인사이트</div>
+          <div style="font-size:9px;color:#111;line-height:1.5;">반도체 섹터 상승세, 삼성 52주 고점 경신. 리밸런싱 검토 권장.</div>
+          <div style="display:flex;gap:4px;margin-top:6px;">
+            <span style="background:#F0F0F0;border-radius:4px;padding:2px 6px;font-size:8px;color:#555;">자세히</span>
+            <span style="background:#007AFF;border-radius:4px;padding:2px 6px;font-size:8px;color:white;">AI 채팅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — 데이터 대시보드 (정보 밀도 높음)</h3>
+      <p>한 화면에 더 많은 정보를. 종목별 미니 바, 요약 스트립, 인사이트 카드를 콤팩트하게 배치. 정보를 한눈에 파악하는 데 최적.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">선택 후 터미널에서 알려줘. 두 가지 요소를 섞어도 돼 (예: "B 느낌인데 배경은 밝게" 등)</p>

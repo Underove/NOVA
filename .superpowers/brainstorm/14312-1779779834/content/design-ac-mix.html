@@ -1,0 +1,158 @@
+<h2>A + C 믹스 — 이런 느낌이야</h2>
+<p class="subtitle">밝은 iOS 카드 스타일 유지하면서 정보 밀도를 높인 버전. 어떤 세부 방향이 더 맞는지 골라줘.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="AC1" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#F2F2F7;border-radius:12px;padding:12px;font-family:-apple-system,sans-serif;font-size:11px;">
+
+        <!-- 헤더 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:12px;font-weight:800;color:#1C1C1E;">주식나침반</span>
+          <div style="display:flex;gap:5px;">
+            <span style="background:rgba(52,199,89,0.12);color:#34C759;font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;">● 장중</span>
+            <span style="background:rgba(255,59,48,0.08);color:#FF3B30;font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;">KOSPI ▲0.8%</span>
+          </div>
+        </div>
+
+        <!-- 포트폴리오 요약 스트립 -->
+        <div style="background:white;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:9px;font-weight:700;color:#1C1C1E;">내 지갑</span>
+            <span style="font-size:9px;color:#34C759;font-weight:700;">총 +8.4%</span>
+          </div>
+          <!-- 종목 행 -->
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:4px;height:28px;background:#FF3B30;border-radius:2px;flex-shrink:0;"></div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;">
+                  <span style="font-size:9px;font-weight:700;color:#1C1C1E;">삼성전자</span>
+                  <span style="font-size:10px;font-weight:800;color:#FF3B30;">299,000</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:1px;">
+                  <span style="font-size:8px;color:#8E8E93;">20주 · +49.5%</span>
+                  <span style="font-size:8px;color:#FF3B30;font-weight:600;">▲ +2.22%</span>
+                </div>
+              </div>
+              <div style="width:40px;height:22px;">
+                <svg viewBox="0 0 40 22" style="width:100%;height:100%;">
+                  <polyline points="0,18 8,16 16,13 24,10 32,6 40,2" fill="none" stroke="#FF3B30" stroke-width="1.5"/>
+                  <polygon points="0,18 8,16 16,13 24,10 32,6 40,2 40,22 0,22" fill="rgba(255,59,48,0.08)"/>
+                </svg>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:4px;height:28px;background:#007AFF;border-radius:2px;flex-shrink:0;"></div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;">
+                  <span style="font-size:9px;font-weight:700;color:#1C1C1E;">SK하이닉스</span>
+                  <span style="font-size:10px;font-weight:800;color:#007AFF;">87,000</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:1px;">
+                  <span style="font-size:8px;color:#8E8E93;">10주 · -3.2%</span>
+                  <span style="font-size:8px;color:#007AFF;font-weight:600;">▼ -0.91%</span>
+                </div>
+              </div>
+              <div style="width:40px;height:22px;">
+                <svg viewBox="0 0 40 22" style="width:100%;height:100%;">
+                  <polyline points="0,4 10,8 20,12 30,10 40,16" fill="none" stroke="#007AFF" stroke-width="1.5"/>
+                  <polygon points="0,4 10,8 20,12 30,10 40,16 40,22 0,22" fill="rgba(0,122,255,0.08)"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 브리핑 카드 -->
+        <div style="background:white;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-size:9px;font-weight:700;color:#1C1C1E;">AI 브리핑</span>
+            <span style="font-size:8px;color:#FF3B30;font-weight:700;background:rgba(255,59,48,0.08);padding:2px 5px;border-radius:4px;">강세</span>
+          </div>
+          <div style="font-size:8px;color:#3C3C43;line-height:1.5;">반도체 섹터 상승 흐름. 삼성 52주 고점 경신. 단기 차익 실현 검토 권장.</div>
+          <div style="display:flex;gap:4px;margin-top:6px;">
+            <button style="flex:1;background:#F2F2F7;border-radius:7px;padding:4px;font-size:8px;color:#3C3C43;font-weight:600;">새로고침</button>
+            <button style="flex:1;background:#007AFF;border-radius:7px;padding:4px;font-size:8px;color:white;font-weight:600;">AI 채팅 →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>AC-1 — 종목 행 + 스파크라인</h3>
+      <p>각 종목을 카드 안에 행으로 나열. 오른쪽에 미니 스파크라인 추가. 스크롤 없이 여러 종목을 한눈에 비교.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="AC2" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#F2F2F7;border-radius:12px;padding:12px;font-family:-apple-system,sans-serif;">
+
+        <!-- 헤더 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:12px;font-weight:800;color:#1C1C1E;">주식나침반</span>
+          <span style="font-size:8px;color:#8E8E93;background:white;padding:2px 8px;border-radius:6px;">KOSPI 2,850 ▲</span>
+        </div>
+
+        <!-- 상단 요약 스트립 -->
+        <div style="background:white;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:8px;display:flex;justify-content:space-between;">
+          <div style="text-align:center;">
+            <div style="font-size:8px;color:#8E8E93;margin-bottom:2px;">총 평가</div>
+            <div style="font-size:11px;font-weight:800;color:#1C1C1E;">3,240만</div>
+          </div>
+          <div style="width:1px;background:#E5E5EA;"></div>
+          <div style="text-align:center;">
+            <div style="font-size:8px;color:#8E8E93;margin-bottom:2px;">수익률</div>
+            <div style="font-size:11px;font-weight:800;color:#34C759;">+8.4%</div>
+          </div>
+          <div style="width:1px;background:#E5E5EA;"></div>
+          <div style="text-align:center;">
+            <div style="font-size:8px;color:#8E8E93;margin-bottom:2px;">오늘 손익</div>
+            <div style="font-size:11px;font-weight:800;color:#FF3B30;">+124만</div>
+          </div>
+        </div>
+
+        <!-- 2x2 종목 그리드 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div style="background:white;border-radius:10px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="font-size:8px;color:#8E8E93;font-weight:600;">삼성전자</div>
+            <div style="font-size:12px;font-weight:800;color:#FF3B30;margin:2px 0;">299K</div>
+            <div style="font-size:8px;color:#FF3B30;font-weight:700;">▲ +2.22%</div>
+            <div style="height:18px;margin-top:4px;">
+              <svg viewBox="0 0 44 18" style="width:100%;height:100%;">
+                <polyline points="0,14 11,12 22,9 33,5 44,1" fill="none" stroke="#FF3B30" stroke-width="1.5"/>
+              </svg>
+            </div>
+          </div>
+          <div style="background:white;border-radius:10px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="font-size:8px;color:#8E8E93;font-weight:600;">SK하이닉스</div>
+            <div style="font-size:12px;font-weight:800;color:#007AFF;margin:2px 0;">87K</div>
+            <div style="font-size:8px;color:#007AFF;font-weight:700;">▼ -0.91%</div>
+            <div style="height:18px;margin-top:4px;">
+              <svg viewBox="0 0 44 18" style="width:100%;height:100%;">
+                <polyline points="0,4 11,7 22,10 33,8 44,13" fill="none" stroke="#007AFF" stroke-width="1.5"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 한줄 인사이트 -->
+        <div style="background:white;border-radius:10px;padding:8px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:8px;">
+          <div style="width:6px;height:6px;background:#FF3B30;border-radius:50%;flex-shrink:0;"></div>
+          <div style="font-size:8px;color:#3C3C43;flex:1;">강세 — 삼성 52주 고점 근접, 단기 차익 검토</div>
+          <span style="font-size:8px;color:#007AFF;font-weight:700;flex-shrink:0;">→</span>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>AC-2 — 요약 스트립 + 2×2 그리드</h3>
+      <p>상단에 총평가·수익률·오늘손익 3가지 핵심 수치 요약. 종목은 2열 그리드로 미니 카드. AI 인사이트는 한 줄 배너로.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">AC-1이나 AC-2 중 하나를 고르거나, "AC-1인데 상단 요약 스트립도 있었으면" 같이 합쳐도 돼.</p>
