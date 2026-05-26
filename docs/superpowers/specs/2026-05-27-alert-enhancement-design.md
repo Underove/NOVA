@@ -92,10 +92,12 @@ def _get_monitored_stocks(user_email: str) -> list[dict]:
 
 ### 신규 `job_check_dart_alerts()` — 16:40 KST
 ```
-- 모든 유저의 모니터링 종목 수집
+- 모든 유저의 모니터링 종목 수집 (중복 종목은 1회만 조회)
 - 종목별 DART fetch_recent_disclosures() 호출 (오늘 날짜 필터)
+- API 호출 간 time.sleep(0.3) throttle (rate limit 방지)
 - rcept_no 기반 중복 체크 후 신규 공시만 alert 저장
 - meta: {"rcept_no": "...", "report_nm": "...", "rcept_dt": "..."}
+- 해당 공시를 모니터링 중인 모든 유저에게 각각 insert
 ```
 
 ### 신규 `job_check_volume_alerts()` — 16:45 KST
@@ -126,13 +128,14 @@ def _get_monitored_stocks(user_email: str) -> list[dict]:
 
 ```python
 # 기존 엔드포인트 — 인증 추가
-GET  /api/notifications/alerts          # Depends(get_current_user), user_email 기준 조회
-POST /api/notifications/alerts/read     # Depends(get_current_user), user_email 기준 처리
+GET    /api/notifications/alerts            # Depends(get_current_user), user_email 기준 조회
+POST   /api/notifications/alerts/read       # Depends(get_current_user), 읽음 처리
+DELETE /api/notifications/alerts/{alert_id} # Depends(get_current_user), 개별 알림 삭제
 
 # 신규 엔드포인트
-GET    /api/notifications/watch          # 수동 추가 종목 목록 반환
-POST   /api/notifications/watch          # { stock_code, corp_name } 추가
-DELETE /api/notifications/watch/{code}   # 종목 제거
+GET    /api/notifications/watch             # 수동 추가 종목 목록 반환
+POST   /api/notifications/watch             # { stock_code, corp_name } 추가
+DELETE /api/notifications/watch/{code}      # 종목 제거
 ```
 
 ### `trade_db.py` 신규 함수
@@ -142,10 +145,15 @@ def init_alert_tables()              # CREATE TABLE IF NOT EXISTS 2개
 def insert_alert(alert: dict)        # id 중복 시 무시 (INSERT OR IGNORE)
 def get_unread_alerts(user_email)    # read=0 조회, 최신순
 def mark_alerts_read(user_email, ids: list[str])
+def delete_alert(user_email, alert_id: str)   # 개별 알림 삭제
+def cleanup_old_alerts()             # 30일 이상 된 read=1 알림 삭제
 def get_alert_watch(user_email)      # alert_watch 조회
 def add_alert_watch(user_email, stock_code, corp_name)
 def remove_alert_watch(user_email, stock_code)
-def get_all_user_emails()            # 스케줄러에서 전체 유저 순회용
+def get_all_user_emails() -> list[str]
+# 구현: SELECT DISTINCT user_email FROM portfolio_items
+#       UNION SELECT DISTINCT user_email FROM watchlist
+#       UNION SELECT DISTINCT user_email FROM alert_watch
 ```
 
 ---
@@ -191,18 +199,20 @@ removeAlertWatch(stock_code: string): Promise<void>
 
 드롭다운 레이아웃:
 ```
-┌────────────────────────────────┐
-│ 알림              [모두 읽음]   │
-├────────────────────────────────┤
-│ 모니터링 종목                   │
-│ [삼성전자 ×][카카오 ×][+ 추가]  │
-├────────────────────────────────┤
-│ 🔵 공시   삼성전자 분기보고서   │
-│ 🟠 거래량  카카오 2.3배 급등    │
-│ 🟣 기술   SK하이닉스 골든크로스 │
-│ 🔴 손절   LG화학 손절가 도달   │
-└────────────────────────────────┘
+┌──────────────────────────────────┐
+│ 알림               [모두 읽음]    │
+├──────────────────────────────────┤
+│ 모니터링 종목                     │
+│ [삼성전자 ×][카카오 ×][+ 추가]    │
+├──────────────────────────────────┤
+│ 🔵 공시   삼성전자 분기보고서  [×]│
+│ 🟠 거래량  카카오 2.3배 급등   [×]│
+│ 🟣 기술   SK하이닉스 골든크로스[×]│
+│ 🔴 손절   LG화학 손절가 도달   [×]│
+└──────────────────────────────────┘
 ```
+
+각 알림 행 오른쪽에 `×` 삭제 버튼 표시. 클릭 시 `DELETE /api/notifications/alerts/{id}` 호출 후 로컬 state에서 즉시 제거.
 
 알림 타입별 색상 (CSS 변수 활용):
 - `dart`: `var(--primary)` (파랑)
@@ -215,16 +225,33 @@ removeAlertWatch(stock_code: string): Promise<void>
 
 ---
 
-## 6. 에러 처리
+## 6. 알림 보존 정책
+
+- `alerts` 테이블 자동 정리: **30일 이상 지난 read=1 알림** 삭제
+- `cleanup_old_alerts()`를 기존 `job_refresh_screener_ta()` 종료 직후 호출 (별도 job 불필요)
+- `alerts_log.json` 기존 데이터: **마이그레이션 없이 자연 소멸**. 서버 재시작 후 새 알림은 모두 DB에 저장되므로 실질적 손실 없음.
+
+---
+
+## 7. 에러 처리
 
 - 각 스케줄러 job은 try/except로 종목 단위 실패 격리 (한 종목 실패가 전체 job을 중단하지 않음)
 - DART API 실패 시 해당 종목 스킵, 로그 warning
 - screener_snapshot 미존재 시 ta_engine 폴백, ta_engine도 실패 시 스킵
 - API 인증 실패 시 401 반환
+- `DELETE /api/notifications/alerts/{id}` — 본인 알림이 아닌 경우 404 반환 (user_email 검증)
 
 ---
 
-## 7. 파일 변경 목록
+## 8. `lib/api.ts` 추가 함수
+
+```typescript
+deleteAlert(id: string): Promise<void>  // DELETE /api/notifications/alerts/{id}
+```
+
+---
+
+## 9. 파일 변경 목록
 
 | 파일 | 변경 |
 |------|------|
