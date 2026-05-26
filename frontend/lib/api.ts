@@ -30,10 +30,13 @@ import type {
   UploadSummary,
   UserProfile,
   WatchStock,
+  CompareStock,
+  CompareResponse,
   WatchlistItem,
 } from "./types";
 
 export type { Alert as PriceAlert } from "./types"; // 하위 호환
+export type { CompareStock, CompareResponse };
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
@@ -427,4 +430,12 @@ export async function deleteFilter(id: number): Promise<void> {
     method: "DELETE",
     headers: authHeaders(),
   });
+}
+
+export async function fetchCompare(
+  codeA: string,
+  codeB: string,
+  period: string,
+): Promise<CompareResponse> {
+  return getJSON(`/api/compare?codes=${codeA},${codeB}&period=${period}`);
 }

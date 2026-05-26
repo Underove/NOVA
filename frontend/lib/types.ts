@@ -354,3 +354,24 @@ export type WatchStock = {
   stock_code: string;
   corp_name: string;
 };
+
+export type CompareStock = {
+  stock_code: string;
+  corp_name: string | null;
+  sector: string | null;
+  metrics: {
+    market_cap: number | null;
+    per: number | null;
+    pbr: number | null;
+    rsi: number | null;
+    momentum_20d: number | null;
+    volume_ratio: number | null;
+    foreign_net_buy: number | null;
+  };
+  price_series: { date: string; close: number; return_pct: number }[];
+};
+
+export type CompareResponse = {
+  stocks: [CompareStock, CompareStock];
+  period: string;
+};
