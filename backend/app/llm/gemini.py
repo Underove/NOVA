@@ -104,6 +104,21 @@ def parse_json_response(response: str, default: dict) -> dict:
     return default
 
 
+def _safe_text(result) -> str:
+    """result.text를 안전하게 추출. function_call 파트가 섞여 있어도 처리."""
+    try:
+        return (result.text or "").strip()
+    except (ValueError, AttributeError):
+        parts = result.candidates[0].content.parts if result and result.candidates else []
+        return " ".join(p.text for p in parts if getattr(p, "text", None)).strip()
+
+
+def _has_function_call(part) -> bool:
+    """파트에 실제 function_call이 있는지 안전하게 확인."""
+    fc = getattr(part, "function_call", None)
+    return fc is not None and bool(getattr(fc, "name", None))
+
+
 def generate_with_tools(
     prompt: str,
     system_instruction: str | None = None,
@@ -162,10 +177,10 @@ def generate_with_tools(
             raise RuntimeError("AI 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.") from last_exc
 
         candidate = result.candidates[0]
-        fn_calls = [p for p in candidate.content.parts if p.function_call]
+        fn_calls = [p for p in candidate.content.parts if _has_function_call(p)]
 
         if not fn_calls:
-            return (result.text or "").strip()
+            return _safe_text(result)
 
         contents.append(candidate.content)
 
@@ -187,4 +202,4 @@ def generate_with_tools(
                 )
             )
 
-    return (result.text or "").strip() if result else "답변을 생성할 수 없습니다."
+    return _safe_text(result) if result else "답변을 생성할 수 없습니다."
