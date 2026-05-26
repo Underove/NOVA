@@ -271,10 +271,15 @@ export default function TradeJournal({ portfolio }: Props) {
         )}
         {graphMode === "pnl" && (
           <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: pnlColor(totalRealized) }}>
-              {totalRealized >= 0 ? "+" : ""}{formatWon(totalRealized)}원
+            <span style={{
+              fontSize: 18, fontWeight: 700,
+              color: totalRealized === 0 ? "var(--label1)" : pnlColor(totalRealized),
+            }}>
+              {totalRealized > 0 ? "+" : ""}{formatWon(totalRealized)}원
             </span>
-            <span style={{ fontSize: 11, color: "var(--label3)", marginLeft: 8 }}>누적 실현 손익</span>
+            <span style={{ fontSize: 11, color: "var(--label3)", marginLeft: 8 }}>
+              누적 실현 손익 · {summary.length}건
+            </span>
           </div>
         )}
 
@@ -291,12 +296,14 @@ export default function TradeJournal({ portfolio }: Props) {
           />
         ) : (
           <div style={{
-            height: 110, display: "flex", alignItems: "center", justifyContent: "center",
+            height: 80, display: "flex", alignItems: "center", justifyContent: "center",
             color: "var(--label3)", fontSize: 13, textAlign: "center", lineHeight: 1.6,
           }}>
             {graphMode === "value"
-              ? "데이터를 모으는 중이에요\n오늘 장 마감 후 첫 기록이 저장됩니다"
-              : "아직 실현된 손익이 없어요"}
+              ? "데이터를 모으는 중이에요 · 장 마감 후 첫 기록이 저장됩니다"
+              : summary.length === 0
+                ? "아직 실현된 손익이 없어요"
+                : "거래 2건 이상부터 차트가 그려져요"}
           </div>
         )}
       </div>
