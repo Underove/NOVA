@@ -241,3 +241,49 @@ def job_premarket_news_summary() -> None:
         logger.info("[스케줄러] 개장 전 뉴스 요약 완료")
     except Exception as e:
         logger.error("[스케줄러] 뉴스 요약 실패: %s", e)
+
+
+# ─── 포트폴리오 스냅샷 ────────────────────────────────────────────────────────
+
+def job_save_portfolio_snapshots() -> None:
+    """장 마감 직후 포트폴리오 스냅샷 저장 (평일 15:32 KST)."""
+    logger.info("[스케줄러] 포트폴리오 스냅샷 저장 시작")
+    try:
+        from app.api.portfolio import _get_price
+        from app.db.trade_db import save_snapshot
+
+        now = _now_kst()
+        date_str = now.strftime("%Y-%m-%d")
+
+        for f in DATA_DIR.glob("portfolio_*.json"):
+            # 파일명에서 username 추출: portfolio_<username>.json
+            username = f.stem[len("portfolio_"):]
+            try:
+                items = json.loads(f.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if not items:
+                continue
+
+            total_value = 0
+            total_invested = 0
+            for item in items:
+                try:
+                    p = _get_price(item["stock_code"])
+                    cp = p["current_price"]
+                    total_value += cp * item["quantity"]
+                    total_invested += item["buy_price"] * item["quantity"]
+                except Exception:
+                    # 시세 조회 실패 시 해당 종목 원금으로 대체
+                    total_invested += item["buy_price"] * item["quantity"]
+                    total_value += item["buy_price"] * item["quantity"]
+
+            try:
+                save_snapshot(username, date_str, total_value, total_invested)
+                logger.info("[스케줄러] %s 스냅샷 저장: 평가 %d원", username, total_value)
+            except Exception as e:
+                logger.warning("[스케줄러] %s 스냅샷 저장 실패: %s", username, e)
+
+        logger.info("[스케줄러] 포트폴리오 스냅샷 저장 완료")
+    except Exception as e:
+        logger.error("[스케줄러] 스냅샷 저장 실패: %s", e)

@@ -10,6 +10,7 @@ import type {
   NewsItem,
   PortfolioBriefing,
   PortfolioItem,
+  PortfolioSnapshot,
   SearchMatch,
   SearchResult,
   ServiceInfo,
@@ -17,6 +18,8 @@ import type {
   Source,
   StockCommentary,
   StockPrice,
+  Trade,
+  TradeSummaryItem,
   TradingFlowItem,
   UploadResult,
   UploadSummary,
@@ -294,4 +297,30 @@ export async function saveNote(stock_code: string, note: string): Promise<void> 
     body: JSON.stringify({ note }),
   });
   if (!res.ok) throw new Error("메모 저장 실패");
+}
+
+// ─── 매매일지 ────────────────────────────────────────────────────────────────
+
+export async function fetchTrades(params?: {
+  limit?: number;
+  offset?: number;
+  stock_code?: string;
+}): Promise<{ trades: Trade[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  if (params?.offset != null) qs.set("offset", String(params.offset));
+  if (params?.stock_code) qs.set("stock_code", params.stock_code);
+  return getJSON(`/api/trades${qs.toString() ? `?${qs}` : ""}`);
+}
+
+export async function updateTradeMemo(tradeId: number, memo: string): Promise<void> {
+  await postJSON(`/api/trades/${tradeId}/memo`, { memo });
+}
+
+export async function fetchTradeSummary(): Promise<{ items: TradeSummaryItem[] }> {
+  return getJSON("/api/trades/summary");
+}
+
+export async function fetchPortfolioSnapshots(days = 90): Promise<{ snapshots: PortfolioSnapshot[] }> {
+  return getJSON(`/api/portfolio/snapshots?days=${days}`);
 }

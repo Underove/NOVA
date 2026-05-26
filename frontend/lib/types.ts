@@ -220,6 +220,37 @@ export type ShortSellingData = {
   trend: { date: string; ratio: number }[];
 };
 
+// ─── 매매일지 ────────────────────────────────────────────────────────────────
+
+export type Trade = {
+  id: number;
+  stock_code: string;
+  corp_name: string;
+  trade_type: "buy" | "sell" | "edit";
+  quantity: number;
+  price: number;
+  buy_price: number | null;
+  memo: string | null;
+  created_at: string;
+};
+
+export type TradeSummaryItem = {
+  trade_id: number;
+  date: string;
+  corp_name: string;
+  stock_code: string;
+  quantity: number;
+  sell_price: number;
+  buy_price: number;
+  realized_pnl: number;
+};
+
+export type PortfolioSnapshot = {
+  snapshot_date: string;
+  total_value: number;
+  total_invested: number;
+};
+
 export type TechnicalData = {
   current_price: number;
   ma5: number | null;

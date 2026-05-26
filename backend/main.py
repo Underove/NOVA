@@ -21,11 +21,14 @@ from app.api import search as search_api  # noqa: E402
 from app.api import upload as upload_api  # noqa: E402
 from app.api import notifications as notifications_api  # noqa: E402
 from app.api import watchlist as watchlist_api  # noqa: E402
+from app.api import trades as trades_api  # noqa: E402
 from app.config import settings  # noqa: E402
+from app.db.trade_db import init_db  # noqa: E402
 from app.scheduler.jobs import (  # noqa: E402
     job_check_price_alerts,
     job_generate_briefing,
     job_premarket_news_summary,
+    job_save_portfolio_snapshots,
 )
 
 KST = "Asia/Seoul"
@@ -33,6 +36,7 @@ KST = "Asia/Seoul"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     scheduler = BackgroundScheduler(timezone=KST)
     # 장 마감 자동 브리핑 (평일 15:35 KST)
     scheduler.add_job(job_generate_briefing, CronTrigger(day_of_week="mon-fri", hour=15, minute=35, timezone=KST))
@@ -40,8 +44,10 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(job_check_price_alerts, CronTrigger(day_of_week="mon-fri", hour="9-15", minute="*/5", timezone=KST))
     # 개장 전 뉴스 요약 (평일 08:50 KST)
     scheduler.add_job(job_premarket_news_summary, CronTrigger(day_of_week="mon-fri", hour=8, minute=50, timezone=KST))
+    # 포트폴리오 스냅샷 (평일 15:32 KST)
+    scheduler.add_job(job_save_portfolio_snapshots, CronTrigger(day_of_week="mon-fri", hour=15, minute=32, timezone=KST))
     scheduler.start()
-    logging.getLogger(__name__).info("스케줄러 시작 — 브리핑 15:35 / 알림 5분 / 뉴스 08:50")
+    logging.getLogger(__name__).info("스케줄러 시작 — 브리핑 15:35 / 알림 5분 / 뉴스 08:50 / 스냅샷 15:32")
     yield
     scheduler.shutdown(wait=False)
 
@@ -78,6 +84,7 @@ app.include_router(portfolio_api.router, prefix="/api", tags=["portfolio"])
 app.include_router(market_api.router, prefix="/api", tags=["market"])
 app.include_router(watchlist_api.router, prefix="/api", tags=["watchlist"])
 app.include_router(notifications_api.router, prefix="/api", tags=["notifications"])
+app.include_router(trades_api.router, prefix="/api", tags=["trades"])
 
 
 @app.get("/")

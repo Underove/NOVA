@@ -19,8 +19,9 @@ import { useRealtimePrice } from "../hooks/useRealtimePrice";
 import type { RealtimePrice } from "../hooks/useRealtimePrice";
 import type { PortfolioItem, SearchResult, StockPrice, WatchlistItem } from "../lib/types";
 import { StockDetailModal } from "./StockDetailModal";
+import TradeJournal from "./TradeJournal";
 
-type Tab = "stocks" | "watchlist" | "allocation";
+type Tab = "stocks" | "watchlist" | "allocation" | "journal";
 
 function StockLogo({ code, name, isEditing }: { code: string; name: string; isEditing: boolean }) {
   return (
@@ -78,6 +79,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
     { key: "stocks", label: "내 주식" },
     { key: "watchlist", label: "관심종목" },
     { key: "allocation", label: "배분" },
+    { key: "journal", label: "일지" },
   ];
   return (
     <div style={{ padding: "10px 16px 8px", flexShrink: 0, background: "var(--bg)", borderBottom: "0.5px solid var(--sep)" }}>
@@ -1159,6 +1161,13 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
       {/* 배분 탭 */}
       {activeTab === "allocation" && (
         <AllocationTab items={items} prices={mergedPrices} />
+      )}
+
+      {/* 매매일지 탭 */}
+      {activeTab === "journal" && (
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+          <TradeJournal portfolio={items} />
+        </div>
       )}
 
       {/* 상세 모달 — 포트폴리오 종목 */}

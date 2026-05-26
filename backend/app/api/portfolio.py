@@ -10,6 +10,7 @@ from app.collectors.dart import download_corp_codes, fetch_recent_disclosures
 from app.collectors.krx import get_chart_data, get_current_price, search_ticker
 from app.collectors.kis_rest import get_current_price_kis, get_fundamental_kis
 from app.config import settings
+from app.db.trade_db import record_trade
 
 
 def _get_price(stock_code: str) -> dict:
@@ -100,12 +101,27 @@ def add_portfolio(item: PortfolioItem, username: str = Depends(get_current_user)
     else:
         items.append(item.model_dump())
     _save(items, username)
+    try:
+        record_trade(username, item.stock_code, item.corp_name, "buy", item.quantity, item.buy_price)
+    except Exception:
+        pass
     return {"ok": True, "item": item.model_dump()}
 
 
 @router.delete("/portfolio/{stock_code}")
 def remove_portfolio(stock_code: str, username: str = Depends(get_current_user)):
-    _save([i for i in _load(username) if i["stock_code"] != stock_code], username)
+    items = _load(username)
+    target = next((i for i in items if i["stock_code"] == stock_code), None)
+    _save([i for i in items if i["stock_code"] != stock_code], username)
+    if target:
+        try:
+            record_trade(
+                username, stock_code, target.get("corp_name", stock_code),
+                "sell", target["quantity"], target["buy_price"],
+                buy_price=target["buy_price"],
+            )
+        except Exception:
+            pass
     return {"ok": True}
 
 
@@ -115,14 +131,35 @@ def update_portfolio(stock_code: str, body: UpdatePortfolioBody, username: str =
     target = next((i for i in items if i["stock_code"] == stock_code), None)
     if not target:
         raise HTTPException(status_code=404, detail="종목 없음")
+
+    old_qty = target["quantity"]
+    old_buy_price = target["buy_price"]
+    corp_name = target.get("corp_name", stock_code)
+
     if body.quantity <= 0:
         items = [i for i in items if i["stock_code"] != stock_code]
+        _save(items, username)
+        try:
+            record_trade(username, stock_code, corp_name, "sell", old_qty, old_buy_price, buy_price=old_buy_price)
+        except Exception:
+            pass
     else:
+        qty_diff = old_qty - body.quantity
+        price_changed = body.buy_price != old_buy_price
         target["buy_price"] = body.buy_price
         target["quantity"] = body.quantity
         target["target_price"] = body.target_price
         target["stop_loss"] = body.stop_loss
-    _save(items, username)
+        _save(items, username)
+        try:
+            if qty_diff > 0:
+                record_trade(username, stock_code, corp_name, "sell", qty_diff, old_buy_price, buy_price=old_buy_price)
+            elif qty_diff < 0:
+                record_trade(username, stock_code, corp_name, "buy", -qty_diff, body.buy_price)
+            elif price_changed:
+                record_trade(username, stock_code, corp_name, "edit", body.quantity, body.buy_price, buy_price=old_buy_price)
+        except Exception:
+            pass
     return {"ok": True}
 
 
