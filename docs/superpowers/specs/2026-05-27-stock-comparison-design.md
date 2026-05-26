@@ -62,6 +62,13 @@ GET /api/compare?codes=005930,000660&period=3m
 
 ```python
 # backend/app/api/compare.py
+from datetime import datetime, timedelta, date, timezone
+from fastapi import APIRouter, HTTPException
+from app.db.trade_db import _conn  # 기존 compass.db 연결 헬퍼
+from app.collectors.krx import krx_stock
+
+router = APIRouter()
+_KST = timezone(timedelta(hours=9))
 
 @router.get("/compare")
 def compare_stocks(codes: str, period: str = "3m"):
@@ -121,6 +128,8 @@ def _get_price_series(stock_code: str, start: date, end: date) -> list[dict]:
 ### `_get_metrics()` 구현
 
 ```python
+_METRIC_KEYS = ("market_cap", "per", "pbr", "rsi", "momentum_20d", "volume_ratio", "foreign_net_buy")
+
 def _get_metrics(stock_code: str) -> dict:
     with _conn() as con:
         row = con.execute(
@@ -130,7 +139,8 @@ def _get_metrics(stock_code: str) -> dict:
             (stock_code,),
         ).fetchone()
     if not row:
-        return {}
+        # 종목 없음: corp_name/sector None, 모든 지표 None으로 반환
+        return {"corp_name": None, "sector": None, **{k: None for k in _METRIC_KEYS}}
     return {k: row[k] for k in row.keys()}
 ```
 
@@ -192,7 +202,7 @@ const [searchResults, setSearchResults] = useState<{stock_code:string; corp_name
 ### 종목 선택 UX
 
 - 카드 클릭 → 인라인 검색창 오픈 (`searchSlot = "A"` 또는 `"B"`)
-- 검색어 입력 → 300ms 디바운스 → `GET /api/search?q=...` 호출
+- 검색어 입력 → 300ms 디바운스 → `searchStock(q)` 호출 (`frontend/lib/api.ts` 기존 함수, `GET /api/portfolio/search?q=...`)
 - 결과 목록에서 선택 → 해당 슬롯에 set, 검색창 닫기
 - 두 종목 모두 채워지면 자동으로 `fetchCompare()` 호출
 
@@ -205,10 +215,13 @@ const [searchResults, setSearchResults] = useState<{stock_code:string; corp_name
 
 ### API 함수 (`lib/api.ts` 추가)
 
+타입은 `lib/types.ts`에만 정의하고, `api.ts`에서는 import해서 사용:
+
 ```typescript
+// lib/types.ts 에 추가
 export type CompareStock = {
   stock_code: string;
-  corp_name: string;
+  corp_name: string | null;
   sector: string | null;
   metrics: {
     market_cap: number | null;
@@ -226,6 +239,13 @@ export type CompareResponse = {
   stocks: [CompareStock, CompareStock];
   period: string;
 };
+```
+
+```typescript
+// lib/api.ts 에 추가
+import type { CompareStock, CompareResponse } from "./types";
+
+export type { CompareStock, CompareResponse };
 
 export async function fetchCompare(
   codeA: string,
@@ -298,8 +318,8 @@ function openCompare(code: string, name: string) {
 | `backend/app/api/compare.py` | 신규 — GET /api/compare |
 | `backend/main.py` | compare router 등록 |
 | `frontend/components/CompareModal.tsx` | 신규 |
-| `frontend/lib/api.ts` | fetchCompare, CompareStock, CompareResponse 추가 |
-| `frontend/lib/types.ts` | CompareStock, CompareResponse 타입 추가 |
+| `frontend/lib/types.ts` | CompareStock, CompareResponse 타입 정의 |
+| `frontend/lib/api.ts` | fetchCompare 추가, types에서 import |
 | `frontend/components/ScreenerCard.tsx` | "비교" 버튼 + CompareModal 연결 |
 | `frontend/components/StockDetailModal.tsx` | "비교" 버튼 + CompareModal 연결 |
 | `frontend/components/PortfolioCard.tsx` | "비교" 버튼 + CompareModal 연결 |
