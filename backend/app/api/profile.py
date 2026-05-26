@@ -38,8 +38,8 @@ class ProfileIn(BaseModel):
     @classmethod
     def check_sectors(cls, v):
         if v is not None:
-            if len(v) > 3:
-                raise ValueError("섹터는 최대 3개까지 선택 가능합니다")
+            if len(v) > 4:
+                raise ValueError("섹터는 최대 4개까지 선택 가능합니다")
             invalid = [s for s in v if s not in VALID_SECTORS]
             if invalid:
                 raise ValueError(f"유효하지 않은 섹터: {invalid}")

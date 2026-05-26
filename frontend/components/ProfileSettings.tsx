@@ -22,7 +22,7 @@ const ALL_SECTORS = [
   "조선·방산", "소비재·유통",
 ];
 
-const MAX_SECTORS = 3;
+const MAX_SECTORS = 4;
 
 export function ProfileSettings({ onClose }: { onClose: () => void }) {
   const [riskLevel, setRiskLevel] = useState<UserProfile["risk_level"]>("neutral");

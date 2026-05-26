@@ -125,7 +125,7 @@ export function ChatCard({ portfolioVersion = 0 }: { portfolioVersion?: number }
               onClick={() => setActiveTab(tab)}
               style={{
                 flex: 1,
-                padding: "8px 4px",
+                padding: "6px 4px",
                 fontSize: 12,
                 fontWeight: activeTab === tab ? 700 : 500,
                 color: activeTab === tab ? "white" : "var(--label2)",
