@@ -283,7 +283,17 @@ export function ScreenerCard() {
                 <p style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, margin: "0 0 4px" }}>
                   {results.length}개 종목
                 </p>
-                {results.map(item => (
+                {results.map(item => {
+                  const rsiLabel = item.rsi == null ? null
+                    : item.rsi < 30 ? { text: "저평가", color: "var(--primary)", bg: "rgba(0,122,255,0.10)" }
+                    : item.rsi > 70 ? { text: "과열", color: "var(--red)", bg: "rgba(255,59,48,0.10)" }
+                    : null;
+                  const maLabel = item.ma_status === "golden" ? { text: "상승신호", color: "var(--red)", bg: "rgba(255,59,48,0.10)" }
+                    : item.ma_status === "dead" ? { text: "하락신호", color: "var(--primary)", bg: "rgba(0,122,255,0.10)" }
+                    : item.ma_status === "above" ? { text: "상승흐름", color: "var(--red)", bg: "rgba(255,59,48,0.07)" }
+                    : item.ma_status === "below" ? { text: "하락흐름", color: "var(--primary)", bg: "rgba(0,122,255,0.07)" }
+                    : null;
+                  return (
                     <div
                       key={item.stock_code}
                       onClick={() => setSelectedItem({
@@ -293,45 +303,64 @@ export function ScreenerCard() {
                         quantity: 0,
                       })}
                       style={{
-                        padding: "10px 12px",
+                        padding: "11px 12px",
                         borderRadius: 12,
                         background: "var(--surface3)",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        gap: 10,
                         cursor: "pointer",
                       }}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--label)" }}>
-                          {item.corp_name}
-                        </span>
-                        <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 500 }}>
-                          {item.sector} · {fmt(item.market_cap)}억
-                        </span>
+                      {/* 아바타 */}
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: "var(--surface)", flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 14, fontWeight: 800, color: "var(--label2)",
+                      }}>
+                        {item.corp_name.slice(0, 1)}
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
-                        {item.rsi != null && (
+
+                      {/* 이름 + 서브 */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--label)", marginBottom: 3 }}>
+                          {item.corp_name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--label2)", fontWeight: 500 }}>
+                          {item.sector} · {fmt(item.market_cap)}억
+                        </div>
+                      </div>
+
+                      {/* 신호 배지 */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                        {rsiLabel && (
                           <span style={{
-                            fontSize: 11, fontWeight: 600,
-                            color: item.rsi < 30 ? "var(--primary)" : item.rsi > 70 ? "var(--red)" : "var(--label2)",
+                            fontSize: 10, fontWeight: 700,
+                            color: rsiLabel.color, background: rsiLabel.bg,
+                            borderRadius: 6, padding: "2px 7px",
                           }}>
-                            RSI {item.rsi}
+                            {rsiLabel.text}
+                          </span>
+                        )}
+                        {maLabel && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 700,
+                            color: maLabel.color, background: maLabel.bg,
+                            borderRadius: 6, padding: "2px 7px",
+                          }}>
+                            {maLabel.text}
                           </span>
                         )}
                         {item.per != null && (
-                          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--label3)" }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--label3)" }}>
                             PER {item.per}
-                          </span>
-                        )}
-                        {item.ma_status && item.ma_status !== "none" && (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: maStatusColor(item.ma_status) }}>
-                            {item.ma_status === "golden" ? "골든" : item.ma_status === "dead" ? "데드" : item.ma_status}
                           </span>
                         )}
                       </div>
                     </div>
-                ))}
+                  );
+                })}
               </div>
             )
           )}
