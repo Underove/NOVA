@@ -16,7 +16,7 @@ pdfplumber==0.11.4
 
 # 벡터 DB + 임베딩
 chromadb==0.5.20
-google-genai==0.3.0
+google-genai==2.6.0
 
 # 주식 시세 (한국거래소)
 pykrx>=1.0.45
