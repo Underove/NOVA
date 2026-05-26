@@ -1,0 +1,355 @@
+// frontend/components/ScreenerCard.tsx
+"use client";
+
+import React, { useEffect, useState } from "react";
+import {
+  deleteFilter, getSavedFilters, saveFilter, screenStocks,
+} from "../lib/api";
+import type { SavedFilter, ScreenerItem, ScreenerParams } from "../lib/types";
+import type { PortfolioItem } from "../lib/types";
+import { StockDetailModal } from "./StockDetailModal";
+
+const SECTORS = [
+  "반도체", "2차전지·전기차", "바이오·제약", "자동차",
+  "IT·플랫폼", "금융·보험", "게임·엔터", "화학·소재",
+  "조선·방산", "소비재·유통",
+];
+
+const MA_OPTIONS: { value: ScreenerParams["ma_status"]; label: string }[] = [
+  { value: undefined,  label: "전체" },
+  { value: "golden",   label: "골든크로스" },
+  { value: "dead",     label: "데드크로스" },
+  { value: "above",    label: "MA5>MA20" },
+  { value: "below",    label: "MA5<MA20" },
+];
+
+function fmt(n: number) { return n.toLocaleString("ko-KR"); }
+
+export function ScreenerCard() {
+  const [sector, setSector]           = useState<string | null>(null);
+  const [perMax, setPerMax]           = useState("");
+  const [rsiMin, setRsiMin]           = useState("");
+  const [rsiMax, setRsiMax]           = useState("");
+  const [maStatus, setMaStatus]       = useState<ScreenerParams["ma_status"]>(undefined);
+  const [results, setResults]         = useState<ScreenerItem[]>([]);
+  const [loading, setLoading]         = useState(false);
+  const [searched, setSearched]       = useState(false);
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [filterName, setFilterName]   = useState("");
+  const [saving, setSaving]           = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
+
+  useEffect(() => {
+    getSavedFilters().then(setSavedFilters).catch(() => {});
+  }, []);
+
+  function buildParams(): ScreenerParams {
+    return {
+      ...(sector ? { sector } : {}),
+      ...(perMax  ? { per_max:  parseFloat(perMax)  } : {}),
+      ...(rsiMin  ? { rsi_min:  parseFloat(rsiMin)  } : {}),
+      ...(rsiMax  ? { rsi_max:  parseFloat(rsiMax)  } : {}),
+      ...(maStatus ? { ma_status: maStatus } : {}),
+    };
+  }
+
+  async function run() {
+    setLoading(true);
+    setSearched(true);
+    try {
+      const data = await screenStocks(buildParams());
+      setResults(data);
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyFilter(f: SavedFilter) {
+    const p = f.params;
+    setSector(p.sector ?? null);
+    setPerMax(p.per_max != null ? String(p.per_max) : "");
+    setRsiMin(p.rsi_min != null ? String(p.rsi_min) : "");
+    setRsiMax(p.rsi_max != null ? String(p.rsi_max) : "");
+    setMaStatus(p.ma_status ?? undefined);
+  }
+
+  async function handleSaveFilter() {
+    if (!filterName.trim()) return;
+    setSaving(true);
+    try {
+      const saved = await saveFilter(filterName.trim(), buildParams());
+      setSavedFilters(prev => [{ id: saved.id, name: saved.name, params: buildParams(), created_at: "" }, ...prev]);
+      setFilterName("");
+      setShowSaveInput(false);
+    } catch {
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteFilter(id: number) {
+    await deleteFilter(id).catch(() => {});
+    setSavedFilters(prev => prev.filter(f => f.id !== id));
+  }
+
+  function openDetail(item: ScreenerItem) {
+    setSelectedItem({ stock_code: item.stock_code, corp_name: item.corp_name, buy_price: 0, quantity: 0 });
+  }
+
+  const maStatusColor = (s: string | null) => {
+    if (s === "golden") return "var(--red)";
+    if (s === "dead")   return "var(--primary)";
+    return "var(--label2)";
+  };
+
+  return (
+    <>
+      <div style={{
+        background: "var(--surface)",
+        borderRadius: 20,
+        padding: "16px 16px 20px",
+        display: "flex", flexDirection: "column", gap: 16,
+      }}>
+        {/* 헤더 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.03em" }}>종목 스크리너</span>
+          <button
+            onClick={() => setShowSaveInput(v => !v)}
+            style={{
+              padding: "5px 12px", borderRadius: 100,
+              background: "var(--surface3)", fontSize: 12, fontWeight: 600, color: "var(--label2)",
+            }}
+          >
+            필터 저장
+          </button>
+        </div>
+
+        {/* 저장된 필터 */}
+        {savedFilters.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {savedFilters.map(f => (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button
+                  onClick={() => applyFilter(f)}
+                  style={{
+                    padding: "5px 10px", borderRadius: 100,
+                    background: "var(--surface3)", fontSize: 11, fontWeight: 600, color: "var(--label)",
+                    border: "1px solid var(--sep)",
+                  }}
+                >{f.name}</button>
+                <button
+                  onClick={() => handleDeleteFilter(f.id)}
+                  style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--surface3)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 필터 이름 입력 */}
+        {showSaveInput && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={filterName}
+              onChange={e => setFilterName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSaveFilter()}
+              placeholder="필터 이름 입력 후 엔터"
+              style={{
+                flex: 1, padding: "8px 12px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+            <button
+              onClick={handleSaveFilter}
+              disabled={saving}
+              style={{
+                padding: "8px 14px", borderRadius: 10,
+                background: "var(--primary)", color: "white",
+                fontSize: 12, fontWeight: 700,
+              }}
+            >{saving ? "…" : "저장"}</button>
+          </div>
+        )}
+
+        {/* 섹터 칩 */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SECTORS.map(s => {
+            const active = sector === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setSector(active ? null : s)}
+                style={{
+                  padding: "5px 12px", borderRadius: 100,
+                  fontSize: 12, fontWeight: active ? 700 : 600,
+                  background: "var(--surface)",
+                  color: active ? "var(--primary)" : "var(--label)",
+                  border: active ? "1.5px solid var(--primary)" : "1.5px solid var(--sep)",
+                  transition: "all 0.14s",
+                }}
+              >{s}</button>
+            );
+          })}
+        </div>
+
+        {/* 조건 행 */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 80 }}>
+            <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600 }}>PER 최대</span>
+            <input
+              value={perMax}
+              onChange={e => setPerMax(e.target.value)}
+              placeholder="예: 15"
+              type="number"
+              style={{
+                padding: "7px 10px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 70 }}>
+            <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600 }}>RSI 최소</span>
+            <input
+              value={rsiMin}
+              onChange={e => setRsiMin(e.target.value)}
+              placeholder="예: 30"
+              type="number"
+              style={{
+                padding: "7px 10px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 70 }}>
+            <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600 }}>RSI 최대</span>
+            <input
+              value={rsiMax}
+              onChange={e => setRsiMax(e.target.value)}
+              placeholder="예: 70"
+              type="number"
+              style={{
+                padding: "7px 10px", borderRadius: 10,
+                background: "var(--surface3)", border: "1px solid var(--sep)",
+                fontSize: 13, color: "var(--label)",
+              }}
+            />
+          </label>
+        </div>
+
+        {/* MA 상태 */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {MA_OPTIONS.map(opt => {
+            const active = maStatus === opt.value;
+            return (
+              <button
+                key={opt.label}
+                onClick={() => setMaStatus(active ? undefined : opt.value)}
+                style={{
+                  padding: "5px 12px", borderRadius: 100,
+                  fontSize: 11, fontWeight: active ? 700 : 600,
+                  background: "var(--surface)",
+                  color: active ? "var(--primary)" : "var(--label2)",
+                  border: active ? "1.5px solid var(--primary)" : "1.5px solid var(--sep)",
+                  transition: "all 0.14s",
+                }}
+              >{opt.label}</button>
+            );
+          })}
+        </div>
+
+        {/* 스크리닝 버튼 */}
+        <button
+          onClick={run}
+          disabled={loading}
+          style={{
+            padding: "12px", borderRadius: 14,
+            background: "var(--primary)", color: "white",
+            fontSize: 14, fontWeight: 700,
+            boxShadow: "0 4px 14px rgba(0,122,255,0.28)",
+            opacity: loading ? 0.7 : 1,
+            transition: "opacity 0.2s",
+          }}
+        >{loading ? "조회 중…" : "스크리닝"}</button>
+
+        {/* 결과 */}
+        {searched && !loading && (
+          results.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--label2)", textAlign: "center", margin: "8px 0 0" }}>
+              조건에 맞는 종목이 없어요
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <p style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, margin: "0 0 6px" }}>
+                {results.length}개 종목
+              </p>
+              {results.map(item => (
+                <button
+                  key={item.stock_code}
+                  onClick={() => openDetail(item)}
+                  style={{
+                    padding: "11px 12px",
+                    borderRadius: 12,
+                    background: "var(--surface3)",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    textAlign: "left",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--label)" }}>
+                      {item.corp_name}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600 }}>
+                      {item.sector} · 시총 {fmt(item.market_cap)}억
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                    {item.rsi != null && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: item.rsi < 30 ? "var(--primary)" : item.rsi > 70 ? "var(--red)" : "var(--label2)" }}>
+                        RSI {item.rsi}
+                      </span>
+                    )}
+                    {item.per != null && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--label2)" }}>
+                        PER {item.per}
+                      </span>
+                    )}
+                    {item.ma_status && item.ma_status !== "none" && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: maStatusColor(item.ma_status) }}>
+                        {item.ma_status === "golden" ? "골든" : item.ma_status === "dead" ? "데드" : item.ma_status}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        )}
+
+        {!searched && (
+          <p style={{ fontSize: 13, color: "var(--label2)", textAlign: "center", margin: "4px 0 0" }}>
+            조건을 설정하고 스크리닝해보세요
+          </p>
+        )}
+      </div>
+
+      {selectedItem && (
+        <StockDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
+    </>
+  );
+}
