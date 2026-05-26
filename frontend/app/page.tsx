@@ -114,8 +114,8 @@ export default function Home() {
       }}>
         {/* 로고 + 장 상태 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <img src="/compass1.png" alt="주식나침반" style={{ width: 28, height: 28, borderRadius: 7, display: "block" }} />
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.04em" }}>주식나침반</span>
+          <img src="/nova.png" alt="NOVA" style={{ width: 28, height: 28, borderRadius: 7, display: "block" }} />
+          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.04em" }}>NOVA</span>
           {marketStatus && <MarketStatusBadge status={marketStatus} />}
         </div>
 
