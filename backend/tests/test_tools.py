@@ -38,3 +38,13 @@ def test_execute_get_technical_indicators():
     with patch("app.tools._ta_analyze", return_value=fake_ta):
         result = execute_tool("get_technical_indicators", {"stock_code": "005930"}, "alice")
     assert result["rsi"] == 55.0
+
+def test_execute_get_dart_disclosures():
+    from app.tools import execute_tool
+    fake_disclosures = [
+        {"report_nm": "분기보고서", "rcept_dt": "2026-05-20", "flr_nm": "삼성전자", "url": "https://dart.fss.or.kr/..."}
+    ]
+    with patch("app.tools._dart_disclosures", return_value=fake_disclosures):
+        result = execute_tool("get_dart_disclosures", {"corp_name": "삼성전자"}, "alice")
+    assert len(result["items"]) == 1
+    assert result["items"][0]["report_nm"] == "분기보고서"

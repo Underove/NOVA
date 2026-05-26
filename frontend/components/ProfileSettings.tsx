@@ -19,7 +19,7 @@ const HORIZON_OPTIONS: { value: UserProfile["horizon"]; label: string; desc: str
 const ALL_SECTORS = [
   "반도체", "2차전지·전기차", "바이오·제약", "자동차",
   "IT·플랫폼", "금융·보험", "게임·엔터", "화학·소재",
-  "조선·방산", "소비재·유통",
+  "조선·방산", "소비재·유통", "건설·인프라", "에너지·유틸리티",
 ];
 
 const MAX_SECTORS = 4;
