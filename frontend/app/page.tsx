@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 
 import { ChatCard } from "../components/ChatCard";
 import { PortfolioCard } from "../components/PortfolioCard";
+import { ScreenerCard } from "../components/ScreenerCard";
 import { fetchAlerts, fetchMarketIndices, markAlertsRead, initAuth } from "../lib/api";
 import type { PriceAlert } from "../lib/api";
 import type { MarketIndex, MarketStatus } from "../lib/types";
 
-type MobilePanel = 0 | 1;
+type MobilePanel = 0 | 1 | 2;
 
 function getInitialTheme(): "light" | "dark" | "system" {
   if (typeof window === "undefined") return "system";
@@ -206,6 +207,12 @@ export default function Home() {
           <ChatCard portfolioVersion={portfolioVersion} />
         </div>
 
+        {/* ── 스크리너 ── */}
+        <div className={`dashboard-panel ${mobilePanel === 2 ? "dashboard-panel--active" : ""}`}>
+          <PanelHeader title="종목 스크리너" subtitle="섹터·RSI·PER·MA 필터링" />
+          <ScreenerCard />
+        </div>
+
       </div>
 
       {/* 모바일 하단 탭바 */}
@@ -229,6 +236,16 @@ export default function Home() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           AI
+        </button>
+        <button
+          className={mobilePanel === 2 ? "active" : ""}
+          onClick={() => setMobilePanel(2)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          스크리너
         </button>
       </nav>
     </div>
@@ -269,11 +286,11 @@ function MarketBadge({ index, className }: { index: MarketIndex; className?: str
       background: "var(--surface2)",
       borderRadius: 20, padding: "4px 10px",
     }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--label3)" }}>{index.name}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--label2)" }}>{index.name}</span>
       <span style={{ fontSize: 12, fontWeight: 800, color, letterSpacing: "-0.03em" }}>
         {index.value.toLocaleString("ko-KR")}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 700, color }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color }}>
         {sign}{index.change_pct.toFixed(2)}%
       </span>
     </div>
@@ -289,7 +306,7 @@ function PanelHeader({ title, subtitle }: { title: string; subtitle: string }) {
       display: "flex", alignItems: "center", justifyContent: "space-between",
     }}>
       <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.04em" }}>{title}</div>
-      <div style={{ fontSize: 11, color: "var(--label3)", fontWeight: 500, letterSpacing: "0" }}>{subtitle}</div>
+      <div style={{ fontSize: 12, color: "var(--label2)", fontWeight: 500 }}>{subtitle}</div>
     </div>
   );
 }
