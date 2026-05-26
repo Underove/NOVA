@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { fetchChartData, fetchCommentary, fetchDisclosures, fetchFundamental, fetchNote, fetchShortSelling, fetchStockNews, fetchStockPrice, fetchTechnical, fetchTradingFlow, removePortfolioItem, saveNote, updatePortfolioItem } from "../lib/api";
+import { isMarketOpen } from "../hooks/useRealtimePrice";
 import type { Candle, CommentarySections, CrossStatus, DisclosureItem, FundamentalData, NewsItem, PortfolioItem, ShortSellingData, StockPrice, TechnicalData, TradingFlowItem } from "../lib/types";
 import { StockChart } from "./StockChart";
 
@@ -146,6 +147,19 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
   const evalPnlPct = price !== null && currentItem.buy_price > 0
     ? ((price.current_price - currentItem.buy_price) / currentItem.buy_price) * 100
     : null;
+
+  const todayStr = new Date().toLocaleDateString("sv-SE"); // "YYYY-MM-DD"
+  const liveCandle: Candle | undefined =
+    price && isMarketOpen() && isFinite(price.open) && price.open > 0
+      ? {
+          time: todayStr,
+          open: price.open,
+          high: price.high,
+          low: price.low,
+          close: price.current_price,
+          volume: price.volume,
+        }
+      : undefined;
 
   async function saveEdit() {
     const q = parseInt(editQty, 10);
@@ -368,7 +382,7 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                     {loadingChart ? (
                       <Skeleton height={240} />
                     ) : candles.length > 0 ? (
-                      <StockChart candles={candles} height={240} buyPrice={currentItem.buy_price} />
+                      <StockChart candles={candles} height={240} buyPrice={currentItem.buy_price} liveCandle={liveCandle} />
                     ) : (
                       <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--label2)", fontSize: 14 }}>
                         차트 데이터 없음
