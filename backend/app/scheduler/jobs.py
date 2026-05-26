@@ -287,3 +287,40 @@ def job_save_portfolio_snapshots() -> None:
         logger.info("[스케줄러] 포트폴리오 스냅샷 저장 완료")
     except Exception as e:
         logger.error("[스케줄러] 스냅샷 저장 실패: %s", e)
+
+
+def job_refresh_screener_fundamentals() -> None:
+    """전 종목 기본적 지표 스냅샷 갱신 (평일 16:10 KST)."""
+    logger.info("[스케줄러] 스크리너 기본적 지표 갱신 시작")
+    try:
+        from app.collectors.screener_collector import fetch_all_fundamentals
+        from app.db.trade_db import upsert_screener_snapshot
+        rows = fetch_all_fundamentals()
+        if rows:
+            upsert_screener_snapshot(rows)
+            logger.info("[스케줄러] 스크리너 스냅샷 %d종목 저장 완료", len(rows))
+        else:
+            logger.warning("[스케줄러] 스크리너 수집 결과 없음")
+    except Exception as e:
+        logger.error("[스케줄러] 스크리너 기본 지표 갱신 실패: %s", e)
+
+
+def job_refresh_screener_ta() -> None:
+    """시총 상위 300개 TA 계산 + screener_snapshot 업데이트 (평일 16:20 KST)."""
+    logger.info("[스케줄러] 스크리너 TA 배치 계산 시작")
+    try:
+        from app.collectors.screener_collector import compute_ta_for_top_n
+        from app.db.trade_db import upsert_screener_snapshot, query_screener
+        ta_rows = compute_ta_for_top_n(300)
+        if ta_rows:
+            existing = {r["stock_code"]: r for r in query_screener(limit=5000)}
+            merged = []
+            for ta in ta_rows:
+                base = existing.get(ta["stock_code"])
+                if not base:
+                    continue
+                merged.append({**base, "rsi": ta["rsi"], "ma_status": ta["ma_status"], "has_ta": 1})
+            upsert_screener_snapshot(merged)
+            logger.info("[스케줄러] TA 배치 완료: %d종목", len(merged))
+    except Exception as e:
+        logger.error("[스케줄러] TA 배치 실패: %s", e)
