@@ -109,9 +109,10 @@ button:active:not(:disabled) {
 }
 
 input,
-textarea {
+textarea,
+select {
   font-family: inherit;
-  font-size: inherit;
+  font-size: max(16px, 1em); /* iOS Safari 줌인 방지 */
   letter-spacing: inherit;
 }
 
