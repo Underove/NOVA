@@ -14,10 +14,10 @@ export default function LoginPage() {
         display: "flex", flexDirection: "column", alignItems: "center", gap: 24,
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🧭</div>
-          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.04em" }}>주식나침반</div>
+          <img src="/nova.png" alt="NOVA" style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 14, display: "block", margin: "0 auto 14px" }} />
+          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "0.08em" }}>N.O.V.A</div>
           <div style={{ fontSize: 13, color: "var(--label2)", marginTop: 6 }}>
-            AI 기반 주식 정보 분석 서비스
+            AI 기반 투자 인사이트 플랫폼
           </div>
         </div>
 
