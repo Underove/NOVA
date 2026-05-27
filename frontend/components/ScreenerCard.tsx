@@ -321,8 +321,8 @@ export function ScreenerCard() {
                 </p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <p style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, margin: "0 0 4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <p style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, margin: "0 0 2px" }}>
                   {results.length}개 종목
                 </p>
                 {results.map(item => {
@@ -345,21 +345,25 @@ export function ScreenerCard() {
                         quantity: 0,
                       })}
                       style={{
-                        padding: "10px 12px",
+                        padding: "12px 14px",
                         borderRadius: 12,
-                        background: "var(--surface3)",
+                        background: "var(--surface2)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         cursor: "pointer",
+                        gap: 10,
                       }}
                     >
                       {/* 이름 + 서브 */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--label)", marginBottom: 3 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--label)", marginBottom: 3, letterSpacing: "-0.02em" }}>
                           {item.corp_name}
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--label2)", fontWeight: 500 }}>
+                        <div style={{
+                          fontSize: 11, color: "var(--label2)", fontWeight: 500,
+                          fontVariantNumeric: "tabular-nums",
+                        }}>
                           {item.sector} · {fmt(item.market_cap)}억
                         </div>
                       </div>
@@ -385,16 +389,19 @@ export function ScreenerCard() {
                           </span>
                         )}
                         {item.per != null && (
-                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--label3)" }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 600, color: "var(--label3)",
+                            fontVariantNumeric: "tabular-nums",
+                          }}>
                             PER {item.per}
                           </span>
                         )}
                         <button
                           onClick={e => { e.stopPropagation(); openCompare(item.stock_code, item.corp_name); }}
                           style={{
-                            padding: "3px 8px",
-                            borderRadius: 6,
-                            background: "rgba(0,122,255,0.08)",
+                            padding: "4px 11px",
+                            borderRadius: 100,
+                            background: "rgba(0,122,255,0.10)",
                             color: "var(--primary)",
                             fontSize: 11, fontWeight: 700,
                             border: "none", cursor: "pointer",
