@@ -1,7 +1,7 @@
 // frontend/components/ScreenerCard.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { screenStocks } from "../lib/api";
 import type { ScreenerItem, ScreenerParams } from "../lib/types";
 import type { PortfolioItem } from "../lib/types";
@@ -121,6 +121,25 @@ export function ScreenerCard() {
   };
 
   const hasFilters = !!(sector || perMin || perMax || rsiMin || rsiMax || maStatus);
+
+  // 필터 변경 시 500ms debounce 후 자동 검색
+  useEffect(() => {
+    if (!hasFilters) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+    const t = setTimeout(() => { run(); }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sector, perMin, perMax, rsiMin, rsiMax, maStatus]);
+
+  function resetFilters() {
+    setSector(null);
+    setPerMin(""); setPerMax("");
+    setRsiMin(""); setRsiMax("");
+    setMaStatus(undefined);
+  }
 
   return (
     <>
@@ -261,22 +280,35 @@ export function ScreenerCard() {
 
         <div style={divider} />
 
-        {/* ── 버튼 + 결과 ── */}
+        {/* ── 초기화 + 진행 표시 + 결과 ── */}
         <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <button
-            onClick={run}
-            disabled={loading}
-            style={{
-              padding: "13px",
-              borderRadius: 14,
-              background: hasFilters ? "var(--primary)" : "var(--surface3)",
-              color: hasFilters ? "#fff" : "var(--label2)",
-              fontSize: 14,
-              fontWeight: 700,
-              opacity: loading ? 0.7 : 1,
-              transition: "background 0.15s, color 0.15s, opacity 0.15s",
-            }}
-          >{loading ? "조회 중…" : "스크리닝"}</button>
+          {hasFilters && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 22 }}>
+              <span style={{ fontSize: 11, color: "var(--label3)", fontWeight: 600 }}>
+                {loading ? "조회 중…" : searched ? `결과 ${results.length}건` : ""}
+              </span>
+              <button
+                onClick={resetFilters}
+                style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: "var(--label2)",
+                  padding: "4px 10px",
+                  borderRadius: 100,
+                  border: "0.5px solid var(--sep)",
+                  background: "transparent",
+                }}
+              >초기화</button>
+            </div>
+          )}
+          {loading && (
+            <div style={{
+              height: 2,
+              background: "linear-gradient(90deg, transparent, var(--primary), transparent)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 1.2s linear infinite",
+              borderRadius: 1,
+            }} />
+          )}
 
           {searched && !loading && (
             results.length === 0 ? (
@@ -378,9 +410,9 @@ export function ScreenerCard() {
             )
           )}
 
-          {!searched && (
+          {!searched && !loading && (
             <p style={{ fontSize: 12, color: "var(--label3)", textAlign: "center", margin: "4px 0 0" }}>
-              조건을 선택하고 스크리닝하세요
+              조건을 선택하면 자동으로 검색돼요
             </p>
           )}
         </div>
