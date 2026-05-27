@@ -127,6 +127,8 @@ function SummaryCard({ items, prices }: { items: PortfolioItem[]; prices: Record
   }, 0);
   const isProfit = totalPnl >= 0;
   const isTodayProfit = todayPnl >= 0;
+  const heroColor = isProfit ? "var(--red)" : "var(--primary)";
+  const tintBg = isProfit ? "rgba(255,59,48,0.05)" : "rgba(0,122,255,0.05)";
 
   function fmtShort(n: number) {
     const abs = Math.abs(n);
@@ -134,33 +136,55 @@ function SummaryCard({ items, prices }: { items: PortfolioItem[]; prices: Record
     return `${Math.round(n / 1e4).toLocaleString("ko-KR")}만`;
   }
 
-  const cellStyle: React.CSSProperties = { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 };
-  const labelStyle: React.CSSProperties = { fontSize: 11, color: "var(--label2)", fontWeight: 600 };
-
   return (
-    <div style={{ margin: "12px 16px 4px", background: "var(--surface)", borderRadius: 16, boxShadow: "var(--shadow)" }}>
-      <div style={{ display: "flex", padding: "12px 8px" }}>
-        <div style={cellStyle}>
-          <span style={labelStyle}>총 평가</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: "var(--label)", letterSpacing: "-0.03em" }}>
-            {fmtShort(totalCurrent)}
-          </span>
-        </div>
-        <div style={{ width: "0.5px", background: "var(--sep)", alignSelf: "stretch" }} />
-        <div style={cellStyle}>
-          <span style={labelStyle}>수익률</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: isProfit ? "var(--red)" : "var(--primary)", letterSpacing: "-0.03em" }}>
-            {totalPnlPct > 0 ? "+" : ""}{totalPnlPct.toFixed(2)}%
-          </span>
-        </div>
-        <div style={{ width: "0.5px", background: "var(--sep)", alignSelf: "stretch" }} />
-        <div style={cellStyle}>
-          <span style={labelStyle}>오늘 손익</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: isTodayProfit ? "var(--red)" : "var(--primary)", letterSpacing: "-0.03em" }}>
-            {todayPnl > 0 ? "+" : ""}{fmtShort(todayPnl)}
-          </span>
-        </div>
+    <div style={{
+      margin: "12px 16px 4px",
+      background: tintBg, borderRadius: 16,
+      border: "0.5px solid var(--sep)",
+      padding: "14px 16px 12px",
+    }}>
+      {/* Hero: 전체 수익률 */}
+      <div style={{ fontSize: 12, color: "var(--label2)", fontWeight: 600, marginBottom: 4, letterSpacing: "-0.01em" }}>
+        전체 수익률
       </div>
+      <div style={{
+        fontSize: 28, fontWeight: 800, lineHeight: 1.05,
+        letterSpacing: "-0.04em",
+        color: heroColor,
+        fontVariantNumeric: "tabular-nums",
+        marginBottom: 10,
+      }}>
+        {totalPnlPct > 0 ? "+" : ""}{totalPnlPct.toFixed(2)}%
+      </div>
+      {/* Sub stats */}
+      <div style={{
+        display: "flex", gap: 0,
+        paddingTop: 10, borderTop: "0.5px solid var(--sep)",
+      }}>
+        <SubStatCell label="총 평가" value={fmtShort(totalCurrent)} />
+        <div style={{ width: "0.5px", background: "var(--sep)" }} />
+        <SubStatCell
+          label="오늘 손익"
+          value={`${todayPnl > 0 ? "+" : ""}${fmtShort(todayPnl)}`}
+          color={isTodayProfit ? "var(--red)" : "var(--primary)"}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SubStatCell({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3, alignItems: "center" }}>
+      <span style={{ fontSize: 11, color: "var(--label3)", fontWeight: 600 }}>{label}</span>
+      <span style={{
+        fontSize: 14, fontWeight: 800,
+        color: color ?? "var(--label)",
+        letterSpacing: "-0.025em",
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -561,11 +585,17 @@ function StockRow({ item, onClick, onEdit, onPriceLoaded, alertCount, realtimePr
             {hitTarget && <span style={{ fontSize: 8, fontWeight: 700, color: "var(--red)", background: "rgba(255,59,48,0.10)", borderRadius: 4, padding: "1px 5px" }}>목표</span>}
             {hitStop && <span style={{ fontSize: 8, fontWeight: 700, color: "var(--primary)", background: "rgba(0,122,255,0.10)", borderRadius: 4, padding: "1px 5px" }}>손절</span>}
           </div>
-          <div style={{ fontSize: 11, color: "var(--label2)", letterSpacing: "-0.01em" }}>
+          <div style={{
+            fontSize: 11, color: "var(--label2)", letterSpacing: "-0.01em",
+            fontVariantNumeric: "tabular-nums",
+          }}>
             {fmt(item.quantity)}주 · {fmt(item.buy_price)}원
           </div>
           {evalPnl !== null && (
-            <div style={{ fontSize: 11, fontWeight: 600, color: accentColor, marginTop: 1 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: accentColor, marginTop: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}>
               {evalPnl > 0 ? "+" : ""}{fmt(evalPnl)}원
             </div>
           )}
@@ -627,11 +657,18 @@ function StockRow({ item, onClick, onEdit, onPriceLoaded, alertCount, realtimePr
             <>
               <div
                 className={priceFlash ? `price-flash-${priceFlash}` : undefined}
-                style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.035em" }}
+                style={{
+                  fontSize: 15, fontWeight: 800, letterSpacing: "-0.035em",
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {fmt(currentPrice)}
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: evalPnlPct !== null ? pctColor(evalPnlPct) : "var(--label2)", marginTop: 1 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700,
+                color: evalPnlPct !== null ? pctColor(evalPnlPct) : "var(--label2)",
+                marginTop: 1, fontVariantNumeric: "tabular-nums",
+              }}>
                 {evalPnlPct !== null ? pctSign(evalPnlPct) : "—"}
               </div>
             </>
@@ -1306,9 +1343,9 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
                 </svg>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>보유 종목이 없어요</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>아직 종목이 없어요</div>
                 <div style={{ fontSize: 13, color: "var(--label2)", lineHeight: 1.7 }}>
-                  위 종목 추가 버튼으로<br />실시간 시세와 AI 분석을 시작해보세요
+                  종목을 추가하면<br />실시간 시세와 AI 분석을 볼 수 있어요
                 </div>
               </div>
             </div>
