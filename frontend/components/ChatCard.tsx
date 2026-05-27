@@ -753,7 +753,6 @@ function SourceBadges({ sources }: { sources: Source[] }) {
 function SyncedBadge({ companies }: { companies: CompanySynced[] }) {
   return (
     <div style={{
-      marginLeft: 34,
       display: "inline-flex", alignItems: "center", gap: 6,
       fontSize: 12, color: "var(--primary)",
       background: "rgba(0,122,255,0.08)",
