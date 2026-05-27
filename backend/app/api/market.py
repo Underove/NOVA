@@ -50,7 +50,7 @@ def _get_market_status() -> dict:
 
 
 def _fetch_indices_fresh() -> dict:
-    """Naver API에서 지수 데이터 직접 조회."""
+    """Naver API에서 지수 데이터 직접 조회 + frankfurter로 USD/KRW 환율."""
     indices: dict = {}
     for name, code in _NAVER_CODES.items():
         try:
@@ -74,6 +74,39 @@ def _fetch_indices_fresh() -> dict:
             }
         except Exception as e:
             logger.warning("지수 조회 실패 (%s): %s", name, e)
+
+    # USD/KRW 환율 (frankfurter.app — 인증 불필요, 영업일 기준)
+    try:
+        r = httpx.get("https://api.frankfurter.dev/v1/latest?from=USD&to=KRW", timeout=5)
+        r.raise_for_status()
+        today = r.json()
+        today_rate = float(today["rates"]["KRW"])
+        today_date = today["date"]
+        # 전 영업일 (최대 7일 전까지 시도)
+        prev_rate = None
+        today_dt = datetime.date.fromisoformat(today_date)
+        for days_back in range(1, 8):
+            d_str = (today_dt - datetime.timedelta(days=days_back)).isoformat()
+            try:
+                rp = httpx.get(f"https://api.frankfurter.dev/v1/{d_str}?from=USD&to=KRW", timeout=5)
+                rp.raise_for_status()
+                prev = rp.json()
+                if prev.get("date") and prev["date"] != today_date:
+                    prev_rate = float(prev["rates"]["KRW"])
+                    break
+            except Exception:
+                continue
+        change_abs = (today_rate - prev_rate) if prev_rate else 0.0
+        change_pct = ((change_abs / prev_rate) * 100) if prev_rate else 0.0
+        indices["USD"] = {
+            "name": "USD",
+            "value": round(today_rate, 2),
+            "change": round(change_abs, 2),
+            "change_pct": round(change_pct, 2),
+        }
+    except Exception as e:
+        logger.warning("USD/KRW 환율 조회 실패: %s", e)
+
     return indices
 
 
