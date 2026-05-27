@@ -900,7 +900,143 @@ function DonutChart({ slices }: { slices: { label: string; pct: number; color: s
 
 // ─── 배분 탭 ─────────────────────────────────────────────────────────────────
 
-function AllocationTab({ items, prices }: { items: PortfolioItem[]; prices: Record<string, StockPrice> }) {
+type AllocValue = PortfolioItem & {
+  currentValue: number;
+  invested: number;
+  pnl: number;
+  pnlPct: number;
+};
+
+type TreemapCell = { item: AllocValue; x: number; y: number; w: number; h: number; pct: number };
+
+function layoutTreemap(items: AllocValue[], rect: { x: number; y: number; w: number; h: number }, totalValue: number, out: TreemapCell[]) {
+  if (items.length === 0) return;
+  if (items.length === 1) {
+    out.push({ item: items[0], x: rect.x, y: rect.y, w: rect.w, h: rect.h, pct: totalValue > 0 ? (items[0].currentValue / totalValue) * 100 : 0 });
+    return;
+  }
+  const sumValues = items.reduce((s, i) => s + i.currentValue, 0);
+  if (sumValues <= 0) {
+    out.push({ item: items[0], x: rect.x, y: rect.y, w: rect.w, h: rect.h, pct: 0 });
+    return;
+  }
+  const half = sumValues / 2;
+  let acc = 0;
+  let splitIdx = 0;
+  for (let i = 0; i < items.length - 1; i++) {
+    acc += items[i].currentValue;
+    if (acc >= half) { splitIdx = i; break; }
+  }
+  const group1 = items.slice(0, splitIdx + 1);
+  const group2 = items.slice(splitIdx + 1);
+  const g1Sum = group1.reduce((s, i) => s + i.currentValue, 0);
+  if (rect.w > rect.h) {
+    const w1 = rect.w * g1Sum / sumValues;
+    layoutTreemap(group1, { x: rect.x, y: rect.y, w: w1, h: rect.h }, totalValue, out);
+    layoutTreemap(group2, { x: rect.x + w1, y: rect.y, w: rect.w - w1, h: rect.h }, totalValue, out);
+  } else {
+    const h1 = rect.h * g1Sum / sumValues;
+    layoutTreemap(group1, { x: rect.x, y: rect.y, w: rect.w, h: h1 }, totalValue, out);
+    layoutTreemap(group2, { x: rect.x, y: rect.y + h1, w: rect.w, h: rect.h - h1 }, totalValue, out);
+  }
+}
+
+function pnlCellColor(pnlPct: number): string {
+  const isProfit = pnlPct >= 0;
+  const intensity = Math.min(Math.abs(pnlPct) / 15, 1);
+  const alpha = 0.28 + intensity * 0.55;
+  return isProfit ? `rgba(255, 59, 48, ${alpha})` : `rgba(0, 122, 255, ${alpha})`;
+}
+
+function PortfolioTreemap({ values, total, onSelect }: {
+  values: AllocValue[];
+  total: number;
+  onSelect: (item: PortfolioItem) => void;
+}) {
+  const [width, setWidth] = useState(320);
+  const height = 240;
+
+  const setRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    ro.observe(el);
+    setWidth(el.clientWidth);
+  }, []);
+
+  const cells = useMemo(() => {
+    if (width === 0 || values.length === 0) return [];
+    const sorted = [...values].sort((a, b) => b.currentValue - a.currentValue);
+    const out: TreemapCell[] = [];
+    layoutTreemap(sorted, { x: 0, y: 0, w: width, h: height }, total, out);
+    return out;
+  }, [values, width, total]);
+
+  return (
+    <div
+      ref={setRef}
+      style={{
+        position: "relative", width: "100%", height,
+        background: "var(--bg)", borderRadius: 12, overflow: "hidden",
+      }}
+    >
+      {cells.map(cell => {
+        const showLabel = cell.w > 64 && cell.h > 36;
+        const showPctOnly = !showLabel && cell.w > 36 && cell.h > 22;
+        return (
+          <div
+            key={cell.item.stock_code}
+            onClick={() => onSelect(cell.item)}
+            title={`${cell.item.corp_name} · ${cell.pct.toFixed(1)}% · ${cell.item.pnlPct > 0 ? "+" : ""}${cell.item.pnlPct.toFixed(1)}%`}
+            style={{
+              position: "absolute",
+              left: cell.x, top: cell.y, width: cell.w, height: cell.h,
+              background: pnlCellColor(cell.item.pnlPct),
+              border: "1px solid var(--bg)",
+              cursor: "pointer",
+              color: "#fff",
+              padding: 8,
+              display: "flex", flexDirection: "column", justifyContent: "space-between",
+              overflow: "hidden",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            {showLabel && (
+              <>
+                <div style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: "-0.02em",
+                  lineHeight: 1.15,
+                  overflow: "hidden", textOverflow: "ellipsis",
+                  display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                }}>
+                  {cell.item.corp_name}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.03em", textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
+                    {cell.pct.toFixed(1)}%
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.85, textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
+                    {cell.item.pnlPct > 0 ? "+" : ""}{cell.item.pnlPct.toFixed(1)}%
+                  </span>
+                </div>
+              </>
+            )}
+            {showPctOnly && (
+              <div style={{
+                margin: "auto", fontSize: 11, fontWeight: 700,
+                textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              }}>
+                {cell.pct.toFixed(0)}%
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function AllocationTab({ items, prices, onSelect }: { items: PortfolioItem[]; prices: Record<string, StockPrice>; onSelect: (item: PortfolioItem) => void }) {
   if (items.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 20 }}>
@@ -965,37 +1101,22 @@ function AllocationTab({ items, prices }: { items: PortfolioItem[]; prices: Reco
         </div>
       </div>
 
-      {/* 도넛 차트 */}
-      {(() => {
-        const sorted = [...values].sort((a, b) => b.currentValue - a.currentValue);
-        const slices = sorted.map((v, i) => ({
-          label: v.corp_name,
-          pct: total > 0 ? (v.currentValue / total) * 100 : 0,
-          color: PALETTE[i % PALETTE.length],
-        }));
-        const manyStocks = slices.length > 4;
-        return (
-          <div style={{ background: "var(--surface)", borderRadius: 16, padding: "14px 16px", boxShadow: "var(--shadow-sm)", marginBottom: 6 }}>
-            <div style={{ display: "flex", flexDirection: manyStocks ? "column" : "row", alignItems: manyStocks ? "center" : "center", gap: 16 }}>
-              <DonutChart slices={slices} />
-              <div style={{
-                flex: 1, width: manyStocks ? "100%" : undefined,
-                display: "grid",
-                gridTemplateColumns: manyStocks ? "1fr 1fr" : "1fr",
-                gap: manyStocks ? "6px 12px" : 7,
-              }}>
-                {slices.map((s, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--label2)", flexShrink: 0 }}>{s.pct.toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* 트리맵 — 크기=비중, 색상=수익률 */}
+      <div style={{ background: "var(--surface)", borderRadius: 16, padding: "14px 16px", boxShadow: "var(--shadow-sm)", marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--label)" }}>종목 비중 · 수익률</span>
+          <span style={{ fontSize: 11, color: "var(--label3)" }}>크기=비중, 색상=손익</span>
+        </div>
+        <PortfolioTreemap values={values} total={total} onSelect={onSelect} />
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10, fontSize: 11, color: "var(--label2)" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 10, height: 10, background: "rgba(255,59,48,0.7)", borderRadius: 2 }} /> 수익
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 10, height: 10, background: "rgba(0,122,255,0.7)", borderRadius: 2 }} /> 손실
+          </span>
+        </div>
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {values
@@ -1234,7 +1355,7 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
 
       {/* 배분 탭 */}
       {activeTab === "allocation" && (
-        <AllocationTab items={items} prices={mergedPrices} />
+        <AllocationTab items={items} prices={mergedPrices} onSelect={setSelected} />
       )}
 
       {/* 매매일지 탭 */}
