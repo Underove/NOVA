@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Activity, Bell, FileText, Moon, ShieldAlert, Sun, Target, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, Bell, BellOff, FileText, Moon, ShieldAlert, Sun, Target, TrendingDown, TrendingUp } from "lucide-react";
 
 import { ChatCard } from "../components/ChatCard";
 import { PortfolioCard } from "../components/PortfolioCard";
@@ -536,7 +536,16 @@ function AlertDropdown({ alerts, watchStocks, onClose, onReadAll, onDelete, onAd
         {/* 알림 목록 */}
         <div style={{ overflowY: "auto", flex: 1 }}>
           {alerts.length === 0 && (
-            <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--label3)", fontSize: 13 }}>새 알림이 없어요</div>
+            <div style={{ padding: "28px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: "rgba(142,142,147,0.12)", color: "var(--label3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <BellOff size={20} strokeWidth={2.0} />
+              </div>
+              <div style={{ color: "var(--label3)", fontSize: 13 }}>새 알림이 없어요</div>
+            </div>
           )}
           {alerts.map((a, i) => {
             const color = ALERT_COLOR[a.type] ?? "var(--label2)";

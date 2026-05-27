@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Briefcase, FileText, Megaphone, Receipt, ShieldAlert, TrendingUp, Users } from "lucide-react";
+import { Briefcase, FileText, FileX2, Megaphone, Newspaper, ShieldAlert, TrendingUp, Users } from "lucide-react";
 
 import { addWatchlistItem, fetchChartData, fetchCommentary, fetchDisclosures, fetchFundamental, fetchNote, fetchShortSelling, fetchStockNews, fetchStockPrice, fetchTechnical, fetchTradingFlow, getSimilarStocks, removePortfolioItem, saveNote, updatePortfolioItem } from "../lib/api";
 import { isAfterHours, isMarketOpen, isPreMarket, useRealtimePrice } from "../hooks/useRealtimePrice";
@@ -820,8 +820,15 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                     <Skeleton height={52} /><Skeleton height={52} /><Skeleton height={52} />
                   </div>
                 ) : news.length === 0 ? (
-                  <div style={{ padding: "24px 20px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
-                    관련 뉴스가 없어요
+                  <div style={{ padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14,
+                      background: "rgba(255,149,0,0.10)", color: "var(--orange)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Newspaper size={22} strokeWidth={2.0} />
+                    </div>
+                    <div style={{ color: "var(--label2)", fontSize: 14 }}>관련 뉴스가 없어요</div>
                   </div>
                 ) : (
                   <div>
@@ -879,8 +886,15 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                     <Skeleton height={44} /><Skeleton height={44} /><Skeleton height={44} />
                   </div>
                 ) : disclosures.length === 0 ? (
-                  <div style={{ padding: "24px 20px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
-                    최근 30일간 공시가 없어요
+                  <div style={{ padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14,
+                      background: "rgba(142,142,147,0.12)", color: "var(--label3)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <FileX2 size={22} strokeWidth={2.0} />
+                    </div>
+                    <div style={{ color: "var(--label2)", fontSize: 14 }}>최근 30일간 공시가 없어요</div>
                   </div>
                 ) : (
                   <div>

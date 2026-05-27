@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { Loader2, ScrollText } from "lucide-react";
 import type { PortfolioItem, PortfolioSnapshot, Trade, TradeDiagnose, TradeSummaryItem } from "../lib/types";
 import { fetchPortfolioSnapshots, fetchTradeDiagnose, fetchTrades, fetchTradeSummary } from "../lib/api";
 import TradeDetailModal from "./TradeDetailModal";
@@ -359,8 +360,15 @@ export default function TradeJournal({ portfolio }: Props) {
           거래 이력 {total > 0 && <span style={{ color: "var(--label3)", fontWeight: 500, fontSize: 13 }}>({total}건)</span>}
         </div>
         {trades.length === 0 ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--label2)", fontSize: 13 }}>
-            아직 기록된 거래가 없어요
+          <div style={{ padding: "32px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: "rgba(0,122,255,0.10)", color: "var(--primary)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <ScrollText size={26} strokeWidth={2.0} />
+            </div>
+            <div style={{ color: "var(--label2)", fontSize: 13 }}>아직 기록된 거래가 없어요</div>
           </div>
         ) : (
           trades.map((t) => (
@@ -418,7 +426,12 @@ function DiagnoseCard({ diagnose, onRefresh, loading }: {
             letterSpacing: "-0.01em",
           }}
         >
-          {loading ? "분석 중…" : "다시 분석"}
+          {loading ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Loader2 size={11} strokeWidth={2.4} style={{ animation: "spin 1s linear infinite" }} />
+              분석 중…
+            </span>
+          ) : "다시 분석"}
         </button>
       </div>
       <p style={{

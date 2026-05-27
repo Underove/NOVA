@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { SearchX } from "lucide-react";
 import { screenStocks } from "../lib/api";
 import type { ScreenerItem, ScreenerParams } from "../lib/types";
 import type { PortfolioItem } from "../lib/types";
@@ -312,8 +313,15 @@ export function ScreenerCard() {
 
           {searched && !loading && (
             results.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "8px 0" }}>
-                <p style={{ fontSize: 13, color: "var(--label2)", margin: "0 0 3px" }}>
+              <div style={{ textAlign: "center", padding: "16px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: "rgba(142,142,147,0.12)", color: "var(--label3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <SearchX size={20} strokeWidth={2.0} />
+                </div>
+                <p style={{ fontSize: 13, color: "var(--label2)", margin: 0 }}>
                   조건에 맞는 종목이 없어요
                 </p>
                 <p style={{ fontSize: 11, color: "var(--label3)", margin: 0 }}>

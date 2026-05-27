@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Moon, Newspaper, Sparkles, Sun, Sunrise, TrendingUp } from "lucide-react";
 import { askStream, fetchPortfolioBriefing, fetchPremarketNews, generatePremarketNews } from "../lib/api";
 import type { PremarketNews } from "../lib/api";
 import type { ChatTurn, CompanySynced, PortfolioBriefing, PortfolioStats, Source } from "../lib/types";
@@ -235,7 +235,13 @@ export function ChatCard({ portfolioVersion = 0 }: { portfolioVersion?: number }
               background: "var(--surface)", borderRadius: 20, padding: "28px 20px",
               boxShadow: "var(--shadow)", textAlign: "center",
             }}>
-              <div style={{ fontSize: 24, marginBottom: 12 }}>⚠️</div>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, margin: "0 auto 12px",
+                background: "rgba(255,149,0,0.10)", color: "var(--orange)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <AlertTriangle size={26} strokeWidth={2.0} />
+              </div>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>브리핑 생성 실패</div>
               <div style={{ fontSize: 13, color: "var(--label2)", lineHeight: 1.7, marginBottom: 20 }}>
                 AI 서버에 일시적인 문제가 발생했어요.<br />잠시 후 다시 시도해주세요.
@@ -267,7 +273,13 @@ export function ChatCard({ portfolioVersion = 0 }: { portfolioVersion?: number }
             <PremarketNewsView news={premarketNews} onRefresh={refreshNews} refreshing={generatingNews} />
           ) : (
             <div style={{ background: "var(--surface)", borderRadius: 20, padding: "28px 20px", boxShadow: "var(--shadow)", textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>📰</div>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, margin: "0 auto 12px",
+                background: "rgba(255,149,0,0.10)", color: "var(--orange)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Newspaper size={26} strokeWidth={2.0} />
+              </div>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>개장 전 뉴스 요약</div>
               <div style={{ fontSize: 13, color: "var(--label3)", lineHeight: 1.7, marginBottom: 20 }}>
                 매일 오전 8:50에 자동으로 생성됩니다.<br />오늘 요약이 아직 준비되지 않았어요.
@@ -305,6 +317,14 @@ export function ChatCard({ portfolioVersion = 0 }: { portfolioVersion?: number }
                 alignItems: "center", justifyContent: "center", gap: 20, padding: "0 20px",
               }}>
                 <div style={{ textAlign: "center" }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 18,
+                    background: "linear-gradient(135deg, rgba(88,86,214,0.14), rgba(0,122,255,0.14))",
+                    color: "#5856D6", margin: "0 auto 12px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Sparkles size={26} strokeWidth={2.0} />
+                  </div>
                   <div style={{ fontSize: 16, color: "var(--label)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 5 }}>무엇이든 물어보세요</div>
                   <div style={{ fontSize: 12, color: "var(--label2)", lineHeight: 1.8 }}>
                     업로드한 자료 · 포트폴리오 · 공시 기반으로 답변
@@ -476,7 +496,12 @@ function BriefingView({ briefing, onRefresh, refreshing }: {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: sentCfg.dot }} />
+            {(() => {
+              const h = new Date().getHours();
+              const TimeIcon = h < 9 ? Sunrise : h < 18 ? Sun : Moon;
+              const tintColor = h < 9 ? "#FF9500" : h < 18 ? "#FFCC00" : "#5856D6";
+              return <TimeIcon size={18} strokeWidth={2.2} color={tintColor} />;
+            })()}
             <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.025em" }}>오늘의 AI 브리핑</span>
             <span style={{
               fontSize: 10, fontWeight: 700, color: sentCfg.color,

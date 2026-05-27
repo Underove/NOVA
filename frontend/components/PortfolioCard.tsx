@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Briefcase, PieChart, Star } from "lucide-react";
 
 import {
   addPortfolioItem,
@@ -784,13 +785,11 @@ function WatchlistTab({ onAddToPortfolio, onSelectItem }: { onAddToPortfolio: (i
       ) : items.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "48px 32px", gap: 16 }}>
           <div style={{
-            width: 48, height: 48, borderRadius: 15,
-            background: "var(--surface2)",
+            width: 56, height: 56, borderRadius: 16,
+            background: "rgba(255,149,0,0.10)", color: "var(--orange)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-            </svg>
+            <Star size={26} strokeWidth={2.0} />
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--label)", marginBottom: 6 }}>관심 종목이 없어요</div>
@@ -1054,13 +1053,11 @@ function AllocationTab({ items, prices, onSelect }: { items: PortfolioItem[]; pr
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "40px 24px", gap: 20 }}>
         <div style={{
-          width: 64, height: 64, borderRadius: 20,
-          background: "var(--surface2)",
+          width: 64, height: 64, borderRadius: 18,
+          background: "rgba(88,86,214,0.10)", color: "#5856D6",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />
-          </svg>
+          <PieChart size={28} strokeWidth={2.0} />
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>배분 데이터가 없어요</div>
@@ -1310,13 +1307,11 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
           {items.length === 0 && !showAdd && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, padding: "48px 32px", gap: 16 }}>
               <div style={{
-                width: 48, height: 48, borderRadius: 15,
-                background: "var(--surface2)",
+                width: 56, height: 56, borderRadius: 16,
+                background: "rgba(0,122,255,0.10)", color: "var(--primary)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--label3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
-                </svg>
+                <Briefcase size={26} strokeWidth={2.0} />
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "var(--label)", marginBottom: 8 }}>아직 종목이 없어요</div>
