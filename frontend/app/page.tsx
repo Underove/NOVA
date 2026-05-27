@@ -217,7 +217,6 @@ export default function Home() {
 
       {/* 모바일 전용 지수 스트립 — 헤더 바로 아래 */}
       <div className="mobile-ticker-strip" style={{ justifyContent: "flex-start" }}>
-        {marketStatus && <MarketStatusBadge status={marketStatus} />}
         {!indicesLoaded && (
           <>
             <div className="index-skeleton" style={{ width: 110 }} />

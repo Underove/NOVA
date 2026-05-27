@@ -314,17 +314,11 @@ textarea:focus {
     height: 24px;
   }
 
-  /* 헤더 지수 + 태그라인 + 장 상태 배지 — 모바일에서 숨기고 스트립으로 대체 */
+  /* 헤더 지수만 모바일에서 숨김 (스트립으로 대체). 태그라인·장 상태 배지는 유지 */
   .market-index-item {
     display: none !important;
   }
   .market-index-sep {
-    display: none !important;
-  }
-  .nova-tagline {
-    display: none !important;
-  }
-  .header-market-status {
     display: none !important;
   }
 
