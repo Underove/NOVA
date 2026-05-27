@@ -132,7 +132,7 @@ export function UploadCard() {
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
               <UploadIcon />
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>파일을 올려주세요</div>
+            <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.022em" }}>파일을 올려주세요</div>
             <div style={{ fontSize: 13, color: "var(--label2)", marginTop: 4 }}>PDF · TXT</div>
           </div>
         </label>
@@ -146,7 +146,7 @@ export function UploadCard() {
             border: "3px solid var(--sep)", borderTopColor: "var(--primary)",
             borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px",
           }} />
-          <div style={{ fontSize: 15, fontWeight: 600 }}>분석 준비 중</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>잠시만요…</div>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
@@ -174,7 +174,7 @@ export function UploadCard() {
               {uploadState.result.filename}
             </div>
           </div>
-          <button onClick={reset} style={{ fontSize: 13, color: "var(--label2)" }}>초기화</button>
+          <button onClick={reset} style={{ fontSize: 12, color: "var(--label2)", fontWeight: 700, padding: "4px 11px", background: "var(--surface2)", borderRadius: 100, letterSpacing: "-0.01em" }}>초기화</button>
         </div>
       )}
 
@@ -187,7 +187,7 @@ export function UploadCard() {
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
             {selectedUpload.filename}
           </div>
-          <button onClick={reset} style={{ fontSize: 13, color: "var(--label2)" }}>취소</button>
+          <button onClick={reset} style={{ fontSize: 12, color: "var(--label2)", fontWeight: 700, padding: "4px 11px", background: "var(--surface2)", borderRadius: 100, letterSpacing: "-0.01em" }}>취소</button>
         </div>
       )}
 
@@ -214,7 +214,7 @@ export function UploadCard() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M3 6h18M3 12h18M3 18h18" stroke="var(--label2)" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--label)" }}>자료 보관함</span>
+              <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.022em", color: "var(--label)" }}>자료 보관함</span>
               <span style={{
                 fontSize: 12, fontWeight: 600, color: "var(--primary)",
                 background: "rgba(0,122,255,0.1)", borderRadius: 100, padding: "2px 8px",

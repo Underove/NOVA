@@ -80,7 +80,7 @@ export function ProfileSettings({ onClose }: { onClose: () => void }) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.03em" }}>투자 성향</span>
+        <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.022em" }}>투자 성향</span>
         <button
           onClick={onClose}
           style={{
@@ -202,8 +202,8 @@ export function ProfileSettings({ onClose }: { onClose: () => void }) {
               background: "var(--surface)", borderRadius: 14, padding: "13px 15px",
               border: "0.5px solid var(--sep)",
             }}>
-              <p style={{ fontSize: 13, color: "var(--label2)", lineHeight: 1.75, margin: 0 }}>{aiMemo}</p>
-              <p style={{ fontSize: 11, color: "var(--label3)", margin: "8px 0 0" }}>채팅을 통해 자동으로 업데이트됩니다</p>
+              <p style={{ fontSize: 14, color: "var(--label2)", lineHeight: 1.65, margin: 0, letterSpacing: "-0.015em" }}>{aiMemo}</p>
+              <p style={{ fontSize: 11, color: "var(--label3)", margin: "8px 0 0" }}>채팅을 통해 자동으로 업데이트돼요</p>
             </div>
           </Section>
         )}
@@ -223,11 +223,11 @@ export function ProfileSettings({ onClose }: { onClose: () => void }) {
           onClick={save}
           disabled={saving}
           style={{
-            width: "100%", padding: "13px",
+            width: "100%", padding: "14px",
             borderRadius: 14,
             background: saved ? "var(--green)" : "var(--primary)",
             color: "white",
-            fontSize: 14, fontWeight: 700,
+            fontSize: 16, fontWeight: 700, letterSpacing: "-0.015em",
             boxShadow: saved
               ? "0 4px 14px rgba(52,199,89,0.28)"
               : "0 4px 14px rgba(0,122,255,0.28)",
