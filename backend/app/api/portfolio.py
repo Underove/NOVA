@@ -1,4 +1,5 @@
 """포트폴리오 CRUD + 현재가·차트 + AI 코멘터리."""
+import datetime
 import json
 import sqlite3
 from pathlib import Path
@@ -7,11 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.api.auth import get_current_user
-from app.collectors.dart import download_corp_codes, fetch_recent_disclosures
+from app.collectors.dart import download_corp_codes, fetch_disclosure_body, fetch_recent_disclosures
 from app.collectors.krx import get_chart_data, get_current_price, search_ticker
 from app.collectors.kis_rest import get_current_price_kis, get_fundamental_kis
+from app.collectors.ta_engine import analyze as ta_analyze, ta_text_summary
 from app.config import settings
-from app.db.trade_db import record_trade
+from app.db.trade_db import get_disclosure_summaries, record_trade, save_disclosure_summary
+from app.llm.gemini import generate_answer, parse_json_response
+
+_KST = datetime.timezone(datetime.timedelta(hours=9))
 
 
 def _get_price(stock_code: str) -> dict:
@@ -23,8 +28,7 @@ def _get_price(stock_code: str) -> dict:
                 return result
         except Exception:
             pass
-    from datetime import datetime, timedelta, timezone
-    kst = datetime.now(timezone(timedelta(hours=9)))
+    kst = datetime.datetime.now(_KST)
     data = get_current_price(stock_code)
     total = kst.hour * 60 + kst.minute
     wd = kst.weekday()
@@ -40,8 +44,7 @@ def _get_price(stock_code: str) -> dict:
         session = "closed"
     data["session"] = session
     return data
-from app.collectors.ta_engine import analyze as ta_analyze, ta_text_summary
-from app.llm.gemini import generate_answer, parse_json_response
+
 
 router = APIRouter()
 
@@ -309,8 +312,6 @@ sentiment 판단 기준:
 @router.get("/portfolio/briefing")
 def get_portfolio_briefing(force: bool = False, username: str = Depends(get_current_user)):
     """포트폴리오 전체 기반 AI 오늘의 브리핑. force=true면 캐시 무시."""
-    import datetime
-
     if not force:
         from app.scheduler.jobs import load_briefing_cache
         cached = load_briefing_cache(username)
@@ -436,7 +437,7 @@ risk 룰 (우선순위 순):
     result = {
         "briefing": raw,
         "sections": sections,
-        "generated_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%m/%d %H:%M"),
+        "generated_at": datetime.datetime.now(_KST).strftime("%m/%d %H:%M"),
         "portfolio_stats": portfolio_stats,
     }
     try:
@@ -511,14 +512,13 @@ def get_portfolio_insights(username: str = Depends(get_current_user)):
 @router.get("/portfolio/oneliner")
 def get_portfolio_oneliner(force: bool = False, username: str = Depends(get_current_user)):
     """대시보드 사이드용 한 줄 AI 브리핑. 1시간 캐시. gpt-5.4 full 사용."""
-    import datetime as _dt
     cache_path = _DATA_DIR / f"oneliner_cache_{username}.json"
 
     if not force and cache_path.exists():
         try:
             cached = json.loads(cache_path.read_text(encoding="utf-8"))
-            cached_at = _dt.datetime.fromisoformat(cached.get("_cached_at", ""))
-            if _dt.datetime.now() - cached_at < _dt.timedelta(hours=1):
+            cached_at = datetime.datetime.fromisoformat(cached.get("_cached_at", ""))
+            if datetime.datetime.now() - cached_at < datetime.timedelta(hours=1):
                 return {k: v for k, v in cached.items() if not k.startswith("_")}
         except Exception:
             pass
@@ -528,7 +528,7 @@ def get_portfolio_oneliner(force: bool = False, username: str = Depends(get_curr
         return {
             "headline": "아직 보유 종목이 없어요",
             "tone": "neutral",
-            "generated_at": _dt.datetime.now(_dt.timezone(_dt.timedelta(hours=9))).strftime("%m/%d %H:%M"),
+            "generated_at": datetime.datetime.now(_KST).strftime("%m/%d %H:%M"),
         }
 
     lines = []
@@ -579,12 +579,12 @@ def get_portfolio_oneliner(force: bool = False, username: str = Depends(get_curr
         headline = "AI 브리핑을 잠시 후 다시 받아볼 수 있어요"
         tone = "neutral"
 
-    now_kst = _dt.datetime.now(_dt.timezone(_dt.timedelta(hours=9)))
+    now_kst = datetime.datetime.now(_KST)
     result = {
         "headline": headline,
         "tone": tone,
         "generated_at": now_kst.strftime("%m/%d %H:%M"),
-        "_cached_at": _dt.datetime.now().isoformat(),
+        "_cached_at": datetime.datetime.now().isoformat(),
     }
     try:
         cache_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
@@ -658,8 +658,6 @@ def get_disclosures(stock_code: str, days: int = 30, with_summary: bool = True):
     ]
 
     if with_summary and disclosures:
-        from app.db.trade_db import get_disclosure_summaries, save_disclosure_summary
-        from app.collectors.dart import fetch_disclosure_body
         rcept_nos = [d["rcept_no"] for d in disclosures if d["rcept_no"]]
         cached = get_disclosure_summaries(rcept_nos)
 
@@ -740,11 +738,9 @@ def get_fundamental(stock_code: str):
             pass
 
     # pykrx 폴백
-    import datetime
     from pykrx import stock as pykrx_stock
 
-    _kst = datetime.timezone(datetime.timedelta(hours=9))
-    _today = datetime.datetime.now(_kst).date()
+    _today = datetime.datetime.now(_KST).date()
     today = _today.strftime("%Y%m%d")
     start = (_today - datetime.timedelta(days=14)).strftime("%Y%m%d")
 

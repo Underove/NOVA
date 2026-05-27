@@ -227,7 +227,7 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
           time: lastCandle.time,
           open: lastCandle.open,
           high: Math.max(lastCandle.high, price.current_price),
-          low: Math.min(lastCandle.low, price.current_price),
+          low: lastCandle.low > 0 ? Math.min(lastCandle.low, price.current_price) : price.current_price,
           close: price.current_price,
           volume: lastCandle.volume,
         }

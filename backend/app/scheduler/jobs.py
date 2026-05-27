@@ -4,13 +4,14 @@ import json
 import logging
 from pathlib import Path
 
+from app.config import settings
 from app.db.trade_db import (
     insert_alert,
     get_unread_alerts as _db_get_unread,
     mark_alerts_read as _db_mark_read,
     get_alert_watch,
-    get_unread_alert_counts,
 )
+from app.llm.gemini import generate_answer, parse_json_response
 
 logger = logging.getLogger(__name__)
 
@@ -52,17 +53,26 @@ def save_briefing_cache(briefing: dict, username: str = "") -> None:
 
 
 def job_generate_briefing() -> None:
-    """장 마감 후 자동 브리핑 생성 (15:35 KST)."""
+    """장 마감 후 자동 브리핑 생성 (15:35 KST). 전체 사용자 순회."""
     logger.info("[스케줄러] 장 마감 브리핑 자동 생성 시작")
-    try:
-        import sys
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-        from app.api.portfolio import get_portfolio_briefing
-        result = get_portfolio_briefing()
-        save_briefing_cache(result)
-        logger.info("[스케줄러] 브리핑 생성 완료")
-    except Exception as e:
-        logger.error("[스케줄러] 브리핑 생성 실패: %s", e)
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+    from app.api.portfolio import get_portfolio_briefing
+
+    usernames = _get_all_usernames()
+    if not usernames:
+        logger.info("[스케줄러] 브리핑 대상 사용자 없음")
+        return
+
+    success = 0
+    for username in usernames:
+        try:
+            result = get_portfolio_briefing(force=True, username=username)
+            save_briefing_cache(result, username)
+            success += 1
+        except Exception as e:
+            logger.error("[스케줄러] %s 브리핑 실패: %s", username, e)
+    logger.info("[스케줄러] 브리핑 생성 완료: %d/%d", success, len(usernames))
 
 
 # ─── 알림 시스템 ──────────────────────────────────────────────────────────────
@@ -356,8 +366,6 @@ def job_premarket_news_summary() -> None:
     logger.info("[스케줄러] 개장 전 뉴스 요약 시작")
     try:
         from app.collectors.web_search import search_news
-        from app.llm.gemini import generate_answer, parse_json_response
-        from app.config import settings as _settings
 
         all_stocks: dict[str, str] = {}
         for f in DATA_DIR.glob("portfolio_*.json"):
@@ -425,7 +433,7 @@ tone 판단:
             f"[수집된 뉴스]\n{news_text}",
             system_instruction=SYSTEM,
             temperature=0.15, max_tokens=700, json_mode=True,
-            model=_settings.openai_model_pro,
+            model=settings.openai_model_pro,
         )
         sections = parse_json_response(raw, default={})
         now = _now_kst()

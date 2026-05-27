@@ -1,10 +1,18 @@
+import datetime as _dt
+import json as _json
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.api.auth import get_current_user
+from app.config import settings
 from app.db.trade_db import delete_trade, get_realized_summary, get_snapshots, get_trades, update_memo, update_trade
+from app.llm.gemini import generate_answer, parse_json_response
 
 router = APIRouter()
+
+_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 class TradeOut(BaseModel):
@@ -128,14 +136,6 @@ def portfolio_snapshots(
 
 # ─── AI 매매 패턴 진단 ───────────────────────────────────────────────────────────
 
-from pathlib import Path as _Path
-import datetime as _dt
-import json as _json
-from app.config import settings as _settings
-from app.llm.gemini import generate_answer as _generate_answer, parse_json_response as _parse_json
-
-_DATA_DIR = _Path(__file__).resolve().parent.parent.parent / "data"
-
 
 @router.get("/trades/diagnose")
 def diagnose_trading_pattern(force: bool = False, username: str = Depends(get_current_user)) -> dict:
@@ -221,12 +221,12 @@ patterns: 3~5개. 가장 두드러진 것 위주.
     prompt = f"[누적 통계]\n{summary_stats}\n\n[최근 매매 (최대 50건)]\n{trade_text}"
 
     try:
-        raw = _generate_answer(
+        raw = generate_answer(
             prompt, system_instruction=SYSTEM,
             temperature=0.15, max_tokens=800, json_mode=True,
-            model=_settings.openai_model_pro,
+            model=settings.openai_model_pro,
         )
-        parsed = _parse_json(raw, default={})
+        parsed = parse_json_response(raw, default={})
         diagnosis = (parsed.get("diagnosis") or "").strip() or "매매 패턴 분석을 잠시 후 다시 받아볼 수 있어요."
         patterns_raw = parsed.get("patterns") or []
         patterns = []

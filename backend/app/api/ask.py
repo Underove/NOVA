@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from app.api.auth import get_current_user
 from app.db.trade_db import get_profile, update_ai_memo
 from app.llm.gemini import generate_answer
+from app.llm.openai_llm import generate_with_tools_stream
 from app.rag.qa import SYSTEM_INSTRUCTION, answer_with_context, retrieve_for_answer
 
 logger = logging.getLogger(__name__)
@@ -162,8 +163,6 @@ async def ask_stream(
         })
 
         # 2) 토큰 스트리밍 (제너레이터를 to_thread로 wrap)
-        from app.llm.openai_llm import generate_with_tools_stream
-
         def _producer(queue: asyncio.Queue, loop: asyncio.AbstractEventLoop):
             try:
                 for ev_type, data in generate_with_tools_stream(
