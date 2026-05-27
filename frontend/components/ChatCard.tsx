@@ -420,52 +420,35 @@ const SENTIMENT_CONFIG = {
 function StatsBar({ stats }: { stats: PortfolioStats }) {
   const isProfit = stats.total_pnl_pct >= 0;
   const color = isProfit ? "var(--red)" : "var(--primary)";
-  const tintBg = isProfit ? "rgba(255,59,48,0.05)" : "rgba(0,122,255,0.05)";
   return (
     <div style={{
-      background: tintBg, borderRadius: 16,
-      padding: "18px 18px 14px",
-      border: "0.5px solid var(--sep)",
-      marginBottom: 14,
+      display: "flex", gap: 0,
+      background: "var(--surface3)", borderRadius: 14,
+      overflow: "hidden", marginBottom: 16,
     }}>
-      <div style={{ fontSize: 12, color: "var(--label2)", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.01em" }}>
-        보유 종목 {stats.stock_count}개의 평가손익
+      <div style={{ flex: 1, padding: "10px 14px", textAlign: "center", borderRight: "0.5px solid var(--sep)" }}>
+        <div style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, marginBottom: 3 }}>평가손익</div>
+        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.04em", color }}>
+          {stats.total_pnl_pct > 0 ? "+" : ""}{stats.total_pnl_pct.toFixed(2)}%
+        </div>
       </div>
-      <div style={{
-        fontSize: 38, fontWeight: 800, lineHeight: 1.05,
-        letterSpacing: "-0.045em", color,
-        fontVariantNumeric: "tabular-nums",
-        marginBottom: 16,
-      }}>
-        {stats.total_pnl_pct > 0 ? "+" : ""}{stats.total_pnl_pct.toFixed(2)}%
+      <div style={{ flex: 1, padding: "10px 14px", textAlign: "center", borderRight: "0.5px solid var(--sep)" }}>
+        <div style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, marginBottom: 3 }}>최고</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--red)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {stats.best.corp_name}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--red)" }}>
+          {stats.best.pnl_pct > 0 ? "+" : ""}{stats.best.pnl_pct.toFixed(1)}%
+        </div>
       </div>
-      <div style={{
-        display: "flex", gap: 8,
-        paddingTop: 14, borderTop: "0.5px solid var(--sep)",
-      }}>
-        <BestWorstCell label="수익 1위" name={stats.best.corp_name} pct={stats.best.pnl_pct} tone="up" />
-        <div style={{ width: "0.5px", background: "var(--sep)" }} />
-        <BestWorstCell label="손실 1위" name={stats.worst.corp_name} pct={stats.worst.pnl_pct} tone="down" />
-      </div>
-    </div>
-  );
-}
-
-function BestWorstCell({ label, name, pct, tone }: {
-  label: string; name: string; pct: number; tone: "up" | "down";
-}) {
-  const color = tone === "up" ? "var(--red)" : "var(--primary)";
-  return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 11, color: "var(--label3)", marginBottom: 6, fontWeight: 600, letterSpacing: "-0.01em" }}>{label}</div>
-      <div style={{
-        fontSize: 13, fontWeight: 700, marginBottom: 3, letterSpacing: "-0.02em",
-        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-      }}>
-        {name}
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 800, color, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums" }}>
-        {pct > 0 ? "+" : ""}{pct.toFixed(1)}%
+      <div style={{ flex: 1, padding: "10px 14px", textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: "var(--label2)", fontWeight: 600, marginBottom: 3 }}>최저</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {stats.worst.corp_name}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)" }}>
+          {stats.worst.pnl_pct > 0 ? "+" : ""}{stats.worst.pnl_pct.toFixed(1)}%
+        </div>
       </div>
     </div>
   );
