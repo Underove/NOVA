@@ -766,22 +766,23 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
 
               {/* 종목 메모 */}
               <div style={{ background: "var(--surface)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--shadow)" }}>
-                <div style={{ padding: "14px 18px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em" }}>종목 메모</span>
+                <div style={{ padding: "14px 20px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.022em" }}>종목 메모</span>
                   <span style={{ fontSize: 11, color: "var(--label3)", fontWeight: 500 }}>자동 저장</span>
                 </div>
-                <div style={{ padding: "12px 18px 16px" }}>
+                <div style={{ padding: "12px 20px 16px" }}>
                   <textarea
                     value={note}
                     onChange={e => setNote(e.target.value)}
                     onBlur={() => saveNote(currentItem.stock_code, note).catch(() => {})}
-                    placeholder="매수 이유, 전략, 주의사항 등을 메모하세요…"
+                    placeholder="매수 이유, 전략, 주의사항 등을 적어보세요…"
                     rows={4}
                     style={{
                       width: "100%", background: "var(--bg)", borderRadius: 12,
-                      padding: "10px 14px", fontSize: 13, lineHeight: 1.7,
+                      padding: "10px 14px", fontSize: 15, lineHeight: 1.6,
                       color: "var(--label)", border: "none", outline: "none",
                       resize: "none", fontFamily: "inherit",
+                      letterSpacing: "-0.015em",
                     }}
                   />
                 </div>
@@ -789,27 +790,27 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
 
               {/* 관련 뉴스 */}
               <div style={{ background: "var(--surface)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--shadow)" }}>
-                <div style={{ padding: "14px 18px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>관련 뉴스</span>
+                <div style={{ padding: "14px 20px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.022em" }}>관련 뉴스</span>
                 </div>
                 {loadingNews ? (
-                  <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ padding: "10px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
                     <Skeleton height={52} /><Skeleton height={52} /><Skeleton height={52} />
                   </div>
                 ) : news.length === 0 ? (
-                  <div style={{ padding: "24px 18px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
+                  <div style={{ padding: "24px 20px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
                     관련 뉴스가 없어요
                   </div>
                 ) : (
                   <div>
                     {news.slice(0, 6).map((n, i) => (
                       <div key={i}>
-                        {i > 0 && <div style={{ height: "0.5px", background: "var(--sep)", marginLeft: 18 }} />}
+                        {i > 0 && <div style={{ height: "0.5px", background: "var(--sep)", marginLeft: 20 }} />}
                         <a
                           href={n.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ display: "flex", alignItems: "flex-start", padding: "12px 18px", gap: 12, textDecoration: "none" }}
+                          style={{ display: "flex", alignItems: "flex-start", padding: "12px 20px", gap: 12, textDecoration: "none" }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
@@ -847,28 +848,28 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
 
               {/* 최근 공시 */}
               <div style={{ background: "var(--surface)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--shadow)" }}>
-                <div style={{ padding: "14px 18px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>최근 공시</span>
+                <div style={{ padding: "14px 20px 12px", borderBottom: "0.5px solid var(--sep)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.022em" }}>최근 공시</span>
                   <span style={{ fontSize: 12, color: "var(--label3)" }}>30일 이내</span>
                 </div>
                 {loadingDisclosures ? (
-                  <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ padding: "10px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
                     <Skeleton height={44} /><Skeleton height={44} /><Skeleton height={44} />
                   </div>
                 ) : disclosures.length === 0 ? (
-                  <div style={{ padding: "24px 18px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
+                  <div style={{ padding: "24px 20px", textAlign: "center", color: "var(--label2)", fontSize: 14 }}>
                     최근 30일간 공시가 없어요
                   </div>
                 ) : (
                   <div>
                     {disclosures.slice(0, 8).map((d, i) => (
                       <div key={d.rcept_no}>
-                        {i > 0 && <div style={{ height: "0.5px", background: "var(--sep)", marginLeft: 18 }} />}
+                        {i > 0 && <div style={{ height: "0.5px", background: "var(--sep)", marginLeft: 20 }} />}
                         <a
                           href={d.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ display: "flex", alignItems: "center", padding: "12px 18px", gap: 12, textDecoration: "none" }}
+                          style={{ display: "flex", alignItems: "center", padding: "12px 20px", gap: 12, textDecoration: "none" }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
