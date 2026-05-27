@@ -194,10 +194,11 @@ def get_chart(stock_code: str, days: int = 90, interval: str | None = None):
     - interval='5m' → KIS 1분봉 2회 호출 후 5분봉 집계 12건
     """
     try:
-        if interval in ("1m", "5m"):
+        if interval in ("5m", "1d"):
             from app.collectors.kis_rest import get_minute_chart_kis
-            interval_min = int(interval.rstrip("m"))
-            candles = get_minute_chart_kis(stock_code, interval_min=interval_min)
+            # 5m: 60분 분량 (12개), 1d: 당일 전체 (390분, 78개)
+            span_min = 390 if interval == "1d" else 60
+            candles = get_minute_chart_kis(stock_code, interval_min=5, span_min=span_min)
             return {"stock_code": stock_code, "candles": candles, "interval": interval}
         candles = get_chart_data(stock_code, days=days)
         return {"stock_code": stock_code, "candles": candles}

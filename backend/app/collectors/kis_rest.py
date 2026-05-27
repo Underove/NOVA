@@ -215,32 +215,22 @@ def _aggregate_to_n_minute(candles_1m: list[dict], interval_min: int) -> list[di
     return sorted(bucketed.values(), key=lambda c: c["time"])
 
 
-def get_minute_chart_kis(stock_code: str, interval_min: int = 1, market_code: str = "J") -> list[dict]:
-    """interval_min 분봉 데이터 반환. 1분봉이면 호출 1회 (30건), 5분봉이면 2회 합산 후 집계 (12건).
-    시간은 unix timestamp(초) — frontend lightweight-charts UTCTimestamp 호환."""
-    if interval_min == 1:
-        # 호출 1회 — 최근 30분
-        kst_now = datetime.now(_KST)
-        base = kst_now.strftime("%H%M%S")
-        return _fetch_minute_candles_at(stock_code, base, market_code)
-
-    # 5분봉: 1분봉 60개 → 5분봉 12개로 집계
+def get_minute_chart_kis(stock_code: str, interval_min: int = 5, span_min: int = 60, market_code: str = "J") -> list[dict]:
+    """KIS 1분봉을 받아 interval_min N분봉으로 집계.
+    - span_min: 받아올 총 시간 범위 (분). 5분봉 60분(12개) / 1일(390분, 78개) 등.
+    - 호출 횟수 = ceil(span_min / 30) (1분봉 30개씩).
+    - 시간은 unix timestamp(초) — frontend lightweight-charts UTCTimestamp 호환.
+    """
     kst_now = datetime.now(_KST)
-    base1 = kst_now.strftime("%H%M%S")
-    # 두번째 호출은 30분 전 기준 — 그 이전 30분(즉 30~60분 전) 1분봉
-    earlier = (kst_now - timedelta(minutes=30)).strftime("%H%M%S")
+    n_calls = (span_min + 29) // 30
+    all_1m: list[dict] = []
+    for i in range(n_calls):
+        base = (kst_now - timedelta(minutes=30 * i)).strftime("%H%M%S")
+        try:
+            all_1m.extend(_fetch_minute_candles_at(stock_code, base, market_code))
+        except Exception:
+            continue
 
-    all_1m = []
-    try:
-        all_1m.extend(_fetch_minute_candles_at(stock_code, base1, market_code))
-    except Exception:
-        pass
-    try:
-        all_1m.extend(_fetch_minute_candles_at(stock_code, earlier, market_code))
-    except Exception:
-        pass
-
-    # 중복 제거 (같은 분에 양쪽 호출에서 올 수 있음)
     seen: dict[int, dict] = {}
     for c in all_1m:
         seen[c["time"]] = c

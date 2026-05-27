@@ -9,11 +9,11 @@ import type { Candle, CommentarySections, CrossStatus, DisclosureItem, Fundament
 import { StockChart } from "./StockChart";
 import { CompareModal } from "./CompareModal";
 
-type Period = "1m" | "5m" | "1W" | "1M" | "3M" | "6M" | "1Y";
+type Period = "1D" | "5m" | "1W" | "1M" | "3M" | "1Y";
 
-const PERIOD_INTERVAL: Partial<Record<Period, "1m" | "5m">> = { "1m": "1m", "5m": "5m" };
+const PERIOD_INTERVAL: Partial<Record<Period, "5m" | "1d">> = { "1D": "1d", "5m": "5m" };
 type Tab = "price" | "technical" | "ai";
-const PERIOD_DAYS: Record<Period, number> = { "1m": 1, "5m": 1, "1W": 7, "1M": 30, "3M": 90, "6M": 180, "1Y": 365 };
+const PERIOD_DAYS: Record<Period, number> = { "1D": 1, "5m": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365 };
 
 function fmt(n: number) { return n.toLocaleString("ko-KR"); }
 function pctColor(pct: number) {
@@ -525,7 +525,7 @@ export function StockDetailModal({ item, onClose, onEdit }: Props) {
                   <div style={{ background: "var(--surface)", padding: "12px 16px 10px", borderBottom: "0.5px solid var(--sep)" }}>
                     {/* 기간 선택 */}
                     <div style={{ display: "flex", gap: 0, background: "var(--bg)", borderRadius: 100, padding: 3, marginBottom: 12, alignSelf: "flex-start" }}>
-                      {(["1m", "5m", "1W", "1M", "3M", "6M", "1Y"] as Period[]).map(p => (
+                      {(["1D", "5m", "1W", "1M", "3M", "1Y"] as Period[]).map(p => (
                         <button
                           key={p}
                           onClick={() => setPeriod(p)}
