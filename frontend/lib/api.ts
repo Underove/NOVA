@@ -222,6 +222,13 @@ export async function listUploads(): Promise<UploadSummary[]> {
   return data.uploads ?? [];
 }
 
+export async function getUploadOriginalUrl(upload_id: string): Promise<string | null> {
+  const res = await fetch(`${API_BASE}/api/uploads/${upload_id}/original`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.url ?? null;
+}
+
 // ─── 포트폴리오 ───────────────────────────────────────────────────────────────
 
 export async function listPortfolio(): Promise<PortfolioItem[]> {

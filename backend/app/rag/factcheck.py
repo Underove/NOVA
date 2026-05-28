@@ -189,6 +189,13 @@ def factcheck_upload(upload_id: str) -> dict:
 
     signal, score = compute_signal(claim_results)
 
+    # 결과 영속 — 채팅 답변 그라운딩 + 투명성 (실패해도 응답엔 영향 없음)
+    try:
+        from app.db.trade_db import save_factcheck_results
+        save_factcheck_results(upload_id, claim_results)
+    except Exception:
+        pass
+
     return {
         "upload_id": upload_id,
         "signal": signal,

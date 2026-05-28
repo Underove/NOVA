@@ -53,7 +53,7 @@ def _seed_screener_if_empty() -> None:
     try:
         from app.db.trade_db import _conn
         with _conn() as con:
-            count = con.execute("SELECT COUNT(*) FROM screener_snapshot").fetchone()[0]
+            count = con.execute("SELECT COUNT(*) AS c FROM screener_snapshot").fetchone()["c"]
         if count >= 100:
             _log.info("[시드] screener_snapshot %d행, 시드 불필요", count)
             return
@@ -64,14 +64,21 @@ def _seed_screener_if_empty() -> None:
             with open(seed_path, encoding="utf-8") as f:
                 rows = json.load(f)
             with _conn() as con:
-                con.executemany(
-                    """INSERT OR REPLACE INTO screener_snapshot
+                con.cursor().executemany(
+                    """INSERT INTO screener_snapshot
                        (stock_code, corp_name, sector, market_cap, per, pbr,
                         momentum_20d, rsi, ma_status, has_ta, updated_at,
                         disclosure_30d, volume_ratio, foreign_net_buy)
-                       VALUES (:stock_code, :corp_name, :sector, :market_cap, :per, :pbr,
-                               :momentum_20d, :rsi, :ma_status, :has_ta, :updated_at,
-                               :disclosure_30d, :volume_ratio, :foreign_net_buy)""",
+                       VALUES (%(stock_code)s, %(corp_name)s, %(sector)s, %(market_cap)s, %(per)s, %(pbr)s,
+                               %(momentum_20d)s, %(rsi)s, %(ma_status)s, %(has_ta)s, %(updated_at)s,
+                               %(disclosure_30d)s, %(volume_ratio)s, %(foreign_net_buy)s)
+                       ON CONFLICT(stock_code) DO UPDATE SET
+                         corp_name=excluded.corp_name, sector=excluded.sector,
+                         market_cap=excluded.market_cap, per=excluded.per, pbr=excluded.pbr,
+                         momentum_20d=excluded.momentum_20d, rsi=excluded.rsi,
+                         ma_status=excluded.ma_status, has_ta=excluded.has_ta,
+                         updated_at=excluded.updated_at, disclosure_30d=excluded.disclosure_30d,
+                         volume_ratio=excluded.volume_ratio, foreign_net_buy=excluded.foreign_net_buy""",
                     rows,
                 )
             _log.info("[시드] JSON 시드 %d행 로드 완료", len(rows))

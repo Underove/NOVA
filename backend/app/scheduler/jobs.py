@@ -96,7 +96,7 @@ def _get_all_usernames() -> list[str]:
         from app.db.trade_db import _conn
         with _conn() as con:
             for row in con.execute("SELECT DISTINCT username FROM alert_watch").fetchall():
-                seen.add(row[0])
+                seen.add(row["username"])
     except Exception:
         pass
     return list(seen)

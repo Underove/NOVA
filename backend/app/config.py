@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     jwt_secret: str = "change-me-in-production"
 
+    database_url: str = ""
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+
     host: str = "0.0.0.0"
     port: int = 8000
     debug: bool = True

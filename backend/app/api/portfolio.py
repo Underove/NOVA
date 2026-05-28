@@ -1,7 +1,6 @@
 """포트폴리오 CRUD + 현재가·차트 + AI 코멘터리."""
 import datetime
 import json
-import sqlite3
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -504,9 +503,8 @@ def get_portfolio_insights(username: str = Depends(get_current_user)):
     if not codes:
         return {"insights": {}}
 
-    placeholders = ",".join(["?"] * len(codes))
+    placeholders = ",".join(["%s"] * len(codes))
     with _conn() as con:
-        con.row_factory = sqlite3.Row
         rows = con.execute(
             f"SELECT * FROM screener_snapshot WHERE stock_code IN ({placeholders})",
             codes,

@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.db.chroma_client import get_user_uploads_collection
+from app.db.storage import delete_original, get_download_url, upload_original
 from app.parsers.pdf_parser import chunk_text, extract_text_from_pdf
 
 router = APIRouter()
@@ -38,8 +39,9 @@ def _store_in_vector_db(
     chunks: list[str],
     upload_id: str,
     filename: str,
+    storage_path: str | None = None,
 ) -> tuple[bool, str | None]:
-    """Chroma 저장 성공 시 (True, None), 실패 시 (False, error message)."""
+    """벡터 저장 성공 시 (True, None), 실패 시 (False, error message)."""
     try:
         collection = get_user_uploads_collection()
         now = datetime.now(timezone.utc).isoformat()
@@ -53,6 +55,7 @@ def _store_in_vector_db(
                     "uploaded_at": now,
                     "chunk_index": i,
                     "source_type": "user_upload",
+                    "storage_path": storage_path or "",
                 }
                 for i in range(len(chunks))
             ],
@@ -87,15 +90,36 @@ def list_uploads() -> dict:
     return {"uploads": uploads}
 
 
+@router.get("/uploads/{upload_id}/original")
+def get_upload_original(upload_id: str):
+    """업로드 원본 파일의 임시 다운로드 URL 반환 (Supabase Storage)."""
+    collection = get_user_uploads_collection()
+    result = collection.get(where={"upload_id": upload_id}, include=["metadatas"])
+    metas = result.get("metadatas") or []
+    if not metas:
+        raise HTTPException(404, "해당 자료를 찾을 수 없습니다.")
+    storage_path = (metas[0] or {}).get("storage_path") or ""
+    if not storage_path:
+        raise HTTPException(404, "이 자료는 원본이 보관되지 않았어요.")
+    url = get_download_url(storage_path)
+    if not url:
+        raise HTTPException(503, "원본 다운로드 링크를 만들지 못했어요.")
+    return {"url": url, "filename": (metas[0] or {}).get("filename", "")}
+
+
 @router.delete("/uploads/{upload_id}")
 def delete_upload(upload_id: str):
-    """upload_id에 해당하는 모든 청크를 Chroma에서 삭제."""
+    """upload_id에 해당하는 모든 청크 + 원본 파일 삭제."""
     collection = get_user_uploads_collection()
     result = collection.get(where={"upload_id": upload_id}, include=["metadatas"])
     ids = result.get("ids") or []
+    metas = result.get("metadatas") or []
     if not ids:
         raise HTTPException(404, "해당 자료를 찾을 수 없습니다.")
+    storage_path = (metas[0] or {}).get("storage_path") if metas else ""
     collection.delete(ids=ids)
+    if storage_path:
+        delete_original(storage_path)
     return {"ok": True, "deleted_chunks": len(ids)}
 
 
@@ -121,7 +145,14 @@ async def upload_document(file: UploadFile = File(...)):
 
     chunks = chunk_text(text)
     upload_id = str(uuid.uuid4())
-    stored, error = _store_in_vector_db(chunks, upload_id, file.filename or "")
+
+    # 원본 파일 보관 (Supabase Storage — 미설정 시 None, 기능 영향 없음)
+    storage_path = upload_original(
+        upload_id, file.filename or "file", content,
+        file.content_type or ("application/pdf" if suffix == ".pdf" else "text/plain"),
+    )
+
+    stored, error = _store_in_vector_db(chunks, upload_id, file.filename or "", storage_path)
 
     return {
         "upload_id": upload_id,
@@ -131,6 +162,7 @@ async def upload_document(file: UploadFile = File(...)):
         "chunk_count": len(chunks),
         "vector_db_stored": stored,
         "vector_db_error": error,
+        "original_stored": storage_path is not None,
         "preview": text[:600],
         "first_chunks": chunks[:3],
     }

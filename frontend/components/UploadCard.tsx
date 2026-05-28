@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Download } from "lucide-react";
 
-import { deleteUpload, listUploads, runFactcheck, uploadFile } from "../lib/api";
+import { deleteUpload, getUploadOriginalUrl, listUploads, runFactcheck, uploadFile } from "../lib/api";
 import type { FactcheckState, UploadState, UploadSummary } from "../lib/types";
+import { showToast } from "../hooks/useToast";
 import { FactcheckPanel } from "./FactcheckPanel";
 
 function formatDate(iso: string | undefined): string {
@@ -86,6 +88,16 @@ export function UploadCard() {
       if (selectedUpload?.upload_id === upload_id) reset();
     } catch {
       // 실패해도 조용히 처리
+    }
+  }
+
+  async function handleDownload(upload_id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    const url = await getUploadOriginalUrl(upload_id);
+    if (url) {
+      window.open(url, "_blank", "noopener");
+    } else {
+      showToast("원본 파일이 보관되지 않았어요", "info");
     }
   }
 
@@ -264,6 +276,20 @@ export function UploadCard() {
                       style={{ fontSize: 13, fontWeight: 600, color: "var(--primary)", flexShrink: 0 }}
                     >
                       검사
+                    </button>
+
+                    {/* 원본 다운로드 버튼 */}
+                    <button
+                      onClick={(e) => handleDownload(u.upload_id, e)}
+                      title="원본 다운로드"
+                      style={{
+                        width: 26, height: 26, borderRadius: "50%",
+                        background: "var(--surface2)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "var(--label2)", flexShrink: 0,
+                      }}
+                    >
+                      <Download size={13} strokeWidth={2.2} />
                     </button>
 
                     {/* 삭제 버튼 */}

@@ -1,118 +1,154 @@
-import sqlite3
-import json as _json
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+"""매매일지·프로필·알림·스크리너·공시요약 영속 저장 (Supabase Postgres).
 
-_DB_PATH = Path(__file__).parent.parent.parent / "data" / "compass.db"
+기존 SQLite(compass.db)에서 이전. 커넥션 풀(psycopg_pool) 사용.
+타임스탬프는 ISO 문자열(TEXT)로 저장 — 기존 문자열 비교/슬라이싱 로직 그대로 유지.
+"""
+import json as _json
+import os
+from contextlib import contextmanager
+from datetime import datetime, timezone, timedelta
+
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
+
+from app.config import settings
+
 _KST = timedelta(hours=9)
 
+_pool: ConnectionPool | None = None
 
-def _conn() -> sqlite3.Connection:
-    con = sqlite3.connect(_DB_PATH)
-    con.row_factory = sqlite3.Row
-    return con
+
+def _db_url() -> str:
+    return settings.database_url or os.environ.get("DATABASE_URL", "")
+
+
+def _get_pool() -> ConnectionPool:
+    global _pool
+    if _pool is None:
+        url = _db_url()
+        if not url:
+            raise RuntimeError("DATABASE_URL이 설정되지 않았습니다")
+        _pool = ConnectionPool(
+            url,
+            min_size=1,
+            max_size=5,
+            kwargs={"row_factory": dict_row},
+            open=False,
+        )
+        _pool.open(wait=True, timeout=15)
+    return _pool
+
+
+@contextmanager
+def _conn():
+    with _get_pool().connection() as con:
+        yield con
 
 
 def _kst_now() -> str:
     return (datetime.now(timezone.utc) + _KST).strftime("%Y-%m-%dT%H:%M:%S")
 
 
+_SCHEMA = [
+    """CREATE TABLE IF NOT EXISTS trades (
+        id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        username    TEXT    NOT NULL,
+        stock_code  TEXT    NOT NULL,
+        corp_name   TEXT    NOT NULL,
+        trade_type  TEXT    NOT NULL,
+        quantity    INTEGER NOT NULL,
+        price       INTEGER NOT NULL,
+        buy_price   INTEGER,
+        memo        TEXT,
+        created_at  TEXT    NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_trades_user ON trades(username, created_at DESC)",
+    """CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+        id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        username        TEXT    NOT NULL,
+        snapshot_date   TEXT    NOT NULL,
+        total_value     BIGINT  NOT NULL,
+        total_invested  BIGINT  NOT NULL,
+        created_at      TEXT    NOT NULL,
+        UNIQUE(username, snapshot_date)
+    )""",
+    """CREATE TABLE IF NOT EXISTS user_profiles (
+        username    TEXT PRIMARY KEY,
+        risk_level  TEXT NOT NULL DEFAULT 'neutral',
+        horizon     TEXT NOT NULL DEFAULT 'mid',
+        sectors     TEXT NOT NULL DEFAULT '[]',
+        ai_memo     TEXT NOT NULL DEFAULT '',
+        updated_at  TEXT NOT NULL DEFAULT ''
+    )""",
+    """CREATE TABLE IF NOT EXISTS screener_snapshot (
+        stock_code      TEXT    PRIMARY KEY,
+        corp_name       TEXT    NOT NULL,
+        sector          TEXT,
+        market_cap      BIGINT,
+        per             DOUBLE PRECISION,
+        pbr             DOUBLE PRECISION,
+        momentum_20d    DOUBLE PRECISION,
+        rsi             DOUBLE PRECISION,
+        ma_status       TEXT,
+        has_ta          INTEGER NOT NULL DEFAULT 0,
+        disclosure_30d  INTEGER NOT NULL DEFAULT 0,
+        volume_ratio    DOUBLE PRECISION,
+        foreign_net_buy BIGINT,
+        updated_at      TEXT    NOT NULL DEFAULT ''
+    )""",
+    """CREATE TABLE IF NOT EXISTS saved_screener_filters (
+        id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        username    TEXT    NOT NULL,
+        name        TEXT    NOT NULL,
+        filter_json TEXT    NOT NULL,
+        created_at  TEXT    NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_saved_filters_user ON saved_screener_filters(username)",
+    """CREATE TABLE IF NOT EXISTS alerts (
+        id          TEXT    PRIMARY KEY,
+        username    TEXT    NOT NULL,
+        type        TEXT    NOT NULL,
+        stock_code  TEXT    NOT NULL,
+        corp_name   TEXT    NOT NULL,
+        message     TEXT    NOT NULL,
+        meta        TEXT,
+        created_at  TEXT    NOT NULL,
+        read        INTEGER NOT NULL DEFAULT 0
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_user ON alerts(username, read, created_at DESC)",
+    """CREATE TABLE IF NOT EXISTS alert_watch (
+        seq         BIGINT GENERATED ALWAYS AS IDENTITY,
+        username    TEXT    NOT NULL,
+        stock_code  TEXT    NOT NULL,
+        corp_name   TEXT    NOT NULL,
+        PRIMARY KEY (username, stock_code)
+    )""",
+    """CREATE TABLE IF NOT EXISTS disclosure_summary (
+        rcept_no    TEXT    PRIMARY KEY,
+        summary     TEXT    NOT NULL,
+        created_at  TEXT    DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS')
+    )""",
+    """CREATE TABLE IF NOT EXISTS factcheck_results (
+        id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        upload_id   TEXT    NOT NULL,
+        claim       TEXT    NOT NULL,
+        verdict     TEXT    NOT NULL,
+        reasoning   TEXT,
+        created_at  TEXT    NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_factcheck_upload ON factcheck_results(upload_id)",
+]
+
+
 def init_db() -> None:
     with _conn() as con:
-        con.executescript("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                username    TEXT    NOT NULL,
-                stock_code  TEXT    NOT NULL,
-                corp_name   TEXT    NOT NULL,
-                trade_type  TEXT    NOT NULL,
-                quantity    INTEGER NOT NULL,
-                price       INTEGER NOT NULL,
-                buy_price   INTEGER,
-                memo        TEXT,
-                created_at  TEXT    NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_trades_user
-                ON trades(username, created_at DESC);
-
-            CREATE TABLE IF NOT EXISTS portfolio_snapshots (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                username        TEXT    NOT NULL,
-                snapshot_date   TEXT    NOT NULL,
-                total_value     INTEGER NOT NULL,
-                total_invested  INTEGER NOT NULL,
-                created_at      TEXT    NOT NULL,
-                UNIQUE(username, snapshot_date)
-            );
-
-            CREATE TABLE IF NOT EXISTS user_profiles (
-                username    TEXT PRIMARY KEY,
-                risk_level  TEXT NOT NULL DEFAULT 'neutral',
-                horizon     TEXT NOT NULL DEFAULT 'mid',
-                sectors     TEXT NOT NULL DEFAULT '[]',
-                ai_memo     TEXT NOT NULL DEFAULT '',
-                updated_at  TEXT NOT NULL DEFAULT ''
-            );
-
-            CREATE TABLE IF NOT EXISTS screener_snapshot (
-                stock_code     TEXT    PRIMARY KEY,
-                corp_name      TEXT    NOT NULL,
-                sector         TEXT,
-                market_cap     INTEGER,
-                per            REAL,
-                pbr            REAL,
-                momentum_20d   REAL,
-                rsi            REAL,
-                ma_status      TEXT,
-                has_ta         INTEGER NOT NULL DEFAULT 0,
-                disclosure_30d INTEGER NOT NULL DEFAULT 0,
-                volume_ratio   REAL,
-                foreign_net_buy INTEGER,
-                updated_at     TEXT    NOT NULL DEFAULT ''
-            );
-
-            CREATE TABLE IF NOT EXISTS saved_screener_filters (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                username    TEXT    NOT NULL,
-                name        TEXT    NOT NULL,
-                filter_json TEXT    NOT NULL,
-                created_at  TEXT    NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_saved_filters_user
-                ON saved_screener_filters(username);
-
-            CREATE TABLE IF NOT EXISTS alerts (
-                id          TEXT    PRIMARY KEY,
-                username    TEXT    NOT NULL,
-                type        TEXT    NOT NULL,
-                stock_code  TEXT    NOT NULL,
-                corp_name   TEXT    NOT NULL,
-                message     TEXT    NOT NULL,
-                meta        TEXT,
-                created_at  TEXT    NOT NULL,
-                read        INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE INDEX IF NOT EXISTS idx_alerts_user
-                ON alerts(username, read, created_at DESC);
-
-            CREATE TABLE IF NOT EXISTS alert_watch (
-                username    TEXT    NOT NULL,
-                stock_code  TEXT    NOT NULL,
-                corp_name   TEXT    NOT NULL,
-                PRIMARY KEY (username, stock_code)
-            );
-
-            CREATE TABLE IF NOT EXISTS disclosure_summary (
-                rcept_no    TEXT    PRIMARY KEY,
-                summary     TEXT    NOT NULL,
-                created_at  TEXT    DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        # 기존 DB 마이그레이션 — 없으면 추가
+        for ddl in _SCHEMA:
+            con.execute(ddl)
+        # 구버전 호환 — 컬럼 없으면 추가
         for ddl in (
-            "ALTER TABLE screener_snapshot ADD COLUMN disclosure_30d INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE screener_snapshot ADD COLUMN volume_ratio REAL",
-            "ALTER TABLE screener_snapshot ADD COLUMN foreign_net_buy INTEGER",
+            "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS disclosure_30d INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS volume_ratio DOUBLE PRECISION",
+            "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS foreign_net_buy BIGINT",
         ):
             try:
                 con.execute(ddl)
@@ -131,13 +167,13 @@ def record_trade(
     memo: str | None = None,
 ) -> int:
     with _conn() as con:
-        cur = con.execute(
+        row = con.execute(
             """INSERT INTO trades
                (username, stock_code, corp_name, trade_type, quantity, price, buy_price, memo, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (username, stock_code, corp_name, trade_type, quantity, price, buy_price, memo, _kst_now()),
-        )
-        return cur.lastrowid or 0
+        ).fetchone()
+        return row["id"] if row else 0
 
 
 def get_trades(
@@ -149,31 +185,31 @@ def get_trades(
     with _conn() as con:
         if stock_code:
             rows = con.execute(
-                """SELECT * FROM trades WHERE username=? AND stock_code=?
-                   ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+                """SELECT * FROM trades WHERE username=%s AND stock_code=%s
+                   ORDER BY created_at DESC LIMIT %s OFFSET %s""",
                 (username, stock_code, limit, offset),
             ).fetchall()
             total = con.execute(
-                "SELECT COUNT(*) FROM trades WHERE username=? AND stock_code=?",
+                "SELECT COUNT(*) AS c FROM trades WHERE username=%s AND stock_code=%s",
                 (username, stock_code),
-            ).fetchone()[0]
+            ).fetchone()["c"]
         else:
             rows = con.execute(
-                """SELECT * FROM trades WHERE username=?
-                   ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+                """SELECT * FROM trades WHERE username=%s
+                   ORDER BY created_at DESC LIMIT %s OFFSET %s""",
                 (username, limit, offset),
             ).fetchall()
             total = con.execute(
-                "SELECT COUNT(*) FROM trades WHERE username=?",
+                "SELECT COUNT(*) AS c FROM trades WHERE username=%s",
                 (username,),
-            ).fetchone()[0]
+            ).fetchone()["c"]
         return [dict(r) for r in rows], total
 
 
 def update_memo(username: str, trade_id: int, memo: str) -> bool:
     with _conn() as con:
         cur = con.execute(
-            "UPDATE trades SET memo=? WHERE id=? AND username=?",
+            "UPDATE trades SET memo=%s WHERE id=%s AND username=%s",
             (memo, trade_id, username),
         )
         return cur.rowcount > 0
@@ -183,7 +219,7 @@ def save_snapshot(username: str, date: str, total_value: int, total_invested: in
     with _conn() as con:
         con.execute(
             """INSERT INTO portfolio_snapshots (username, snapshot_date, total_value, total_invested, created_at)
-               VALUES (?, ?, ?, ?, ?)
+               VALUES (%s, %s, %s, %s, %s)
                ON CONFLICT(username, snapshot_date) DO UPDATE SET
                    total_value=excluded.total_value,
                    total_invested=excluded.total_invested,
@@ -196,8 +232,8 @@ def get_snapshots(username: str, days: int = 90) -> list[dict]:
     with _conn() as con:
         rows = con.execute(
             """SELECT snapshot_date, total_value, total_invested
-               FROM portfolio_snapshots WHERE username=?
-               ORDER BY snapshot_date DESC LIMIT ?""",
+               FROM portfolio_snapshots WHERE username=%s
+               ORDER BY snapshot_date DESC LIMIT %s""",
             (username, days),
         ).fetchall()
         return list(reversed([dict(r) for r in rows]))
@@ -205,7 +241,7 @@ def get_snapshots(username: str, days: int = 90) -> list[dict]:
 
 def delete_trade(username: str, trade_id: int) -> bool:
     with _conn() as con:
-        cur = con.execute("DELETE FROM trades WHERE id=? AND username=?", (trade_id, username))
+        cur = con.execute("DELETE FROM trades WHERE id=%s AND username=%s", (trade_id, username))
         return cur.rowcount > 0
 
 
@@ -219,8 +255,8 @@ def update_trade(
 ) -> bool:
     with _conn() as con:
         cur = con.execute(
-            """UPDATE trades SET trade_type=?, quantity=?, price=?, buy_price=?
-               WHERE id=? AND username=?""",
+            """UPDATE trades SET trade_type=%s, quantity=%s, price=%s, buy_price=%s
+               WHERE id=%s AND username=%s""",
             (trade_type, quantity, price, buy_price, trade_id, username),
         )
         return cur.rowcount > 0
@@ -231,7 +267,7 @@ def get_realized_summary(username: str) -> list[dict]:
         rows = con.execute(
             """SELECT id, stock_code, corp_name, quantity, price, buy_price, created_at
                FROM trades
-               WHERE username=? AND trade_type='sell' AND buy_price IS NOT NULL
+               WHERE username=%s AND trade_type='sell' AND buy_price IS NOT NULL
                ORDER BY created_at DESC""",
             (username,),
         ).fetchall()
@@ -248,7 +284,7 @@ def get_profile(username: str) -> dict:
     """user_profiles 조회. 없으면 기본값 반환 (DB에 저장하지 않음)."""
     with _conn() as con:
         row = con.execute(
-            "SELECT * FROM user_profiles WHERE username=?", (username,)
+            "SELECT * FROM user_profiles WHERE username=%s", (username,)
         ).fetchone()
     if row is None:
         return {
@@ -278,7 +314,7 @@ def upsert_profile(
     with _conn() as con:
         con.execute(
             """INSERT INTO user_profiles (username, risk_level, horizon, sectors, ai_memo, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?)
+               VALUES (%s, %s, %s, %s, %s, %s)
                ON CONFLICT(username) DO UPDATE SET
                    risk_level=excluded.risk_level,
                    horizon=excluded.horizon,
@@ -294,7 +330,7 @@ def update_ai_memo(username: str, memo: str) -> None:
     with _conn() as con:
         con.execute(
             """INSERT INTO user_profiles (username, risk_level, horizon, sectors, ai_memo, updated_at)
-               VALUES (?, 'neutral', 'mid', '[]', ?, ?)
+               VALUES (%s, 'neutral', 'mid', '[]', %s, %s)
                ON CONFLICT(username) DO UPDATE SET
                    ai_memo=excluded.ai_memo,
                    updated_at=excluded.updated_at""",
@@ -304,48 +340,55 @@ def update_ai_memo(username: str, memo: str) -> None:
 
 def upsert_screener_snapshot(rows: list[dict]) -> None:
     """전 종목 스냅샷 배치 upsert. disclosure_30d/volume_ratio/foreign_net_buy는 기존 값 유지."""
+    if not rows:
+        return
     today = _kst_now()[:10]
+    payload = [{
+        **r,
+        "disclosure_30d":  r.get("disclosure_30d", 0),
+        "volume_ratio":    r.get("volume_ratio"),
+        "foreign_net_buy": r.get("foreign_net_buy"),
+        "updated_at":      today,
+    } for r in rows]
     with _conn() as con:
-        con.executemany(
+        con.cursor().executemany(
             """INSERT INTO screener_snapshot
                (stock_code, corp_name, sector, market_cap, per, pbr,
                 momentum_20d, rsi, ma_status, has_ta, disclosure_30d,
                 volume_ratio, foreign_net_buy, updated_at)
-               VALUES (:stock_code, :corp_name, :sector, :market_cap, :per, :pbr,
-                       :momentum_20d, :rsi, :ma_status, :has_ta, :disclosure_30d,
-                       :volume_ratio, :foreign_net_buy, :updated_at)
+               VALUES (%(stock_code)s, %(corp_name)s, %(sector)s, %(market_cap)s, %(per)s, %(pbr)s,
+                       %(momentum_20d)s, %(rsi)s, %(ma_status)s, %(has_ta)s, %(disclosure_30d)s,
+                       %(volume_ratio)s, %(foreign_net_buy)s, %(updated_at)s)
                ON CONFLICT(stock_code) DO UPDATE SET
                  corp_name=excluded.corp_name, sector=excluded.sector,
                  market_cap=excluded.market_cap, per=excluded.per, pbr=excluded.pbr,
                  momentum_20d=excluded.momentum_20d, rsi=excluded.rsi,
                  ma_status=excluded.ma_status, has_ta=excluded.has_ta,
                  updated_at=excluded.updated_at""",
-            [{
-                **r,
-                "disclosure_30d":  r.get("disclosure_30d", 0),
-                "volume_ratio":    r.get("volume_ratio"),
-                "foreign_net_buy": r.get("foreign_net_buy"),
-                "updated_at":      today,
-            } for r in rows],
+            payload,
         )
 
 
 def update_market_signals(signals: list[dict]) -> None:
     """종목별 volume_ratio·foreign_net_buy 일괄 업데이트."""
+    if not signals:
+        return
     with _conn() as con:
-        con.executemany(
+        con.cursor().executemany(
             """UPDATE screener_snapshot
-               SET volume_ratio=:volume_ratio, foreign_net_buy=:foreign_net_buy
-               WHERE stock_code=:stock_code""",
+               SET volume_ratio=%(volume_ratio)s, foreign_net_buy=%(foreign_net_buy)s
+               WHERE stock_code=%(stock_code)s""",
             signals,
         )
 
 
 def update_disclosure_counts(counts: dict[str, int]) -> None:
     """종목코드별 30일 공시 건수 일괄 업데이트."""
+    if not counts:
+        return
     with _conn() as con:
-        con.executemany(
-            "UPDATE screener_snapshot SET disclosure_30d = ? WHERE stock_code = ?",
+        con.cursor().executemany(
+            "UPDATE screener_snapshot SET disclosure_30d = %s WHERE stock_code = %s",
             [(cnt, code) for code, cnt in counts.items()],
         )
 
@@ -366,41 +409,41 @@ def query_screener(
     clauses = []
     params: list = []
     if sector:
-        clauses.append("sector = ?")
+        clauses.append("sector = %s")
         params.append(sector)
     if market_cap_min is not None:
-        clauses.append("market_cap >= ?")
+        clauses.append("market_cap >= %s")
         params.append(market_cap_min)
     if market_cap_max is not None:
-        clauses.append("market_cap <= ?")
+        clauses.append("market_cap <= %s")
         params.append(market_cap_max)
     if per_min is not None or per_max is not None:
         clauses.append("per IS NOT NULL AND per > 0")
     if per_min is not None:
-        clauses.append("per >= ?")
+        clauses.append("per >= %s")
         params.append(per_min)
     if per_max is not None:
-        clauses.append("per <= ?")
+        clauses.append("per <= %s")
         params.append(per_max)
     if pbr_max is not None:
-        clauses.append("pbr IS NOT NULL AND pbr > 0 AND pbr <= ?")
+        clauses.append("pbr IS NOT NULL AND pbr > 0 AND pbr <= %s")
         params.append(pbr_max)
     # rsi/market_cap filters intentionally exclude NULL rows (no TA data = not yet computed)
     if rsi_min is not None:
-        clauses.append("rsi >= ?")
+        clauses.append("rsi >= %s")
         params.append(rsi_min)
     if rsi_max is not None:
-        clauses.append("rsi <= ?")
+        clauses.append("rsi <= %s")
         params.append(rsi_max)
     if ma_status:
-        clauses.append("ma_status = ?")
+        clauses.append("ma_status = %s")
         params.append(ma_status)
 
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     params.append(limit)
     with _conn() as con:
         rows = con.execute(
-            f"SELECT * FROM screener_snapshot {where} ORDER BY has_ta DESC, market_cap DESC LIMIT ?",
+            f"SELECT * FROM screener_snapshot {where} ORDER BY has_ta DESC, market_cap DESC NULLS LAST LIMIT %s",
             params,
         ).fetchall()
     return [dict(r) for r in rows]
@@ -410,7 +453,7 @@ def get_top_market_cap_codes(n: int = 300) -> list[str]:
     """시총 상위 n개 종목코드 반환."""
     with _conn() as con:
         rows = con.execute(
-            "SELECT stock_code FROM screener_snapshot ORDER BY market_cap DESC LIMIT ?",
+            "SELECT stock_code FROM screener_snapshot ORDER BY market_cap DESC NULLS LAST LIMIT %s",
             (n,),
         ).fetchall()
     return [r["stock_code"] for r in rows]
@@ -418,17 +461,17 @@ def get_top_market_cap_codes(n: int = 300) -> list[str]:
 
 def save_filter(username: str, name: str, filter_json: str) -> int:
     with _conn() as con:
-        cur = con.execute(
-            "INSERT INTO saved_screener_filters (username, name, filter_json, created_at) VALUES (?, ?, ?, ?)",
+        row = con.execute(
+            "INSERT INTO saved_screener_filters (username, name, filter_json, created_at) VALUES (%s, %s, %s, %s) RETURNING id",
             (username, name, filter_json, _kst_now()),
-        )
-        return cur.lastrowid or 0
+        ).fetchone()
+        return row["id"] if row else 0
 
 
 def get_saved_filters(username: str) -> list[dict]:
     with _conn() as con:
         rows = con.execute(
-            "SELECT * FROM saved_screener_filters WHERE username = ? ORDER BY created_at DESC",
+            "SELECT * FROM saved_screener_filters WHERE username = %s ORDER BY created_at DESC",
             (username,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -437,7 +480,7 @@ def get_saved_filters(username: str) -> list[dict]:
 def delete_filter(filter_id: int, username: str) -> bool:
     with _conn() as con:
         cur = con.execute(
-            "DELETE FROM saved_screener_filters WHERE id = ? AND username = ?",
+            "DELETE FROM saved_screener_filters WHERE id = %s AND username = %s",
             (filter_id, username),
         )
         return cur.rowcount > 0
@@ -454,12 +497,13 @@ def insert_alert(
     message: str,
     meta: dict | None = None,
 ) -> None:
-    """중복 alert_id는 무시 (INSERT OR IGNORE)."""
+    """중복 alert_id는 무시 (ON CONFLICT DO NOTHING)."""
     with _conn() as con:
         con.execute(
-            """INSERT OR IGNORE INTO alerts
+            """INSERT INTO alerts
                (id, username, type, stock_code, corp_name, message, meta, created_at, read)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)
+               ON CONFLICT(id) DO NOTHING""",
             (
                 alert_id, username, type_, stock_code, corp_name, message,
                 _json.dumps(meta, ensure_ascii=False) if meta else None,
@@ -473,7 +517,7 @@ def get_unread_alerts(username: str) -> list[dict]:
     with _conn() as con:
         rows = con.execute(
             """SELECT id, type, stock_code, corp_name, message, meta, created_at
-               FROM alerts WHERE username=? AND read=0
+               FROM alerts WHERE username=%s AND read=0
                ORDER BY created_at DESC""",
             (username,),
         ).fetchall()
@@ -487,9 +531,11 @@ def get_unread_alerts(username: str) -> list[dict]:
 
 
 def mark_alerts_read(username: str, ids: list[str]) -> None:
+    if not ids:
+        return
     with _conn() as con:
-        con.executemany(
-            "UPDATE alerts SET read=1 WHERE id=? AND username=?",
+        con.cursor().executemany(
+            "UPDATE alerts SET read=1 WHERE id=%s AND username=%s",
             [(alert_id, username) for alert_id in ids],
         )
 
@@ -497,7 +543,7 @@ def mark_alerts_read(username: str, ids: list[str]) -> None:
 def delete_alert(username: str, alert_id: str) -> bool:
     with _conn() as con:
         cur = con.execute(
-            "DELETE FROM alerts WHERE id=? AND username=?",
+            "DELETE FROM alerts WHERE id=%s AND username=%s",
             (alert_id, username),
         )
         return cur.rowcount > 0
@@ -507,19 +553,19 @@ def cleanup_old_alerts() -> None:
     """30일 이상 된 read=1 알림 삭제."""
     cutoff = (datetime.now(timezone.utc) + _KST - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
     with _conn() as con:
-        con.execute("DELETE FROM alerts WHERE read=1 AND created_at < ?", (cutoff,))
+        con.execute("DELETE FROM alerts WHERE read=1 AND created_at < %s", (cutoff,))
 
 
 def get_unread_alert_counts(username: str, stock_codes: list[str]) -> dict[str, int]:
     """종목코드별 미읽은 알림 건수 (포트폴리오 뱃지용)."""
     if not stock_codes:
         return {}
-    placeholders = ",".join("?" * len(stock_codes))
-    # placeholders contains only "?" chars — no user data in SQL string
+    placeholders = ",".join(["%s"] * len(stock_codes))
+    # placeholders contains only "%s" tokens — no user data in SQL string
     with _conn() as con:
         rows = con.execute(
             f"""SELECT stock_code, COUNT(*) as cnt
-                FROM alerts WHERE username=? AND read=0
+                FROM alerts WHERE username=%s AND read=0
                 AND stock_code IN ({placeholders})
                 GROUP BY stock_code""",
             [username, *stock_codes],
@@ -530,7 +576,7 @@ def get_unread_alert_counts(username: str, stock_codes: list[str]) -> dict[str, 
 def get_alert_watch(username: str) -> list[dict]:
     with _conn() as con:
         rows = con.execute(
-            "SELECT stock_code, corp_name FROM alert_watch WHERE username=? ORDER BY rowid",
+            "SELECT stock_code, corp_name FROM alert_watch WHERE username=%s ORDER BY seq",
             (username,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -539,7 +585,8 @@ def get_alert_watch(username: str) -> list[dict]:
 def add_alert_watch(username: str, stock_code: str, corp_name: str) -> None:
     with _conn() as con:
         con.execute(
-            "INSERT OR IGNORE INTO alert_watch (username, stock_code, corp_name) VALUES (?, ?, ?)",
+            """INSERT INTO alert_watch (username, stock_code, corp_name) VALUES (%s, %s, %s)
+               ON CONFLICT(username, stock_code) DO NOTHING""",
             (username, stock_code, corp_name),
         )
 
@@ -547,7 +594,7 @@ def add_alert_watch(username: str, stock_code: str, corp_name: str) -> None:
 def remove_alert_watch(username: str, stock_code: str) -> None:
     with _conn() as con:
         con.execute(
-            "DELETE FROM alert_watch WHERE username=? AND stock_code=?",
+            "DELETE FROM alert_watch WHERE username=%s AND stock_code=%s",
             (username, stock_code),
         )
 
@@ -558,13 +605,13 @@ def get_disclosure_summaries(rcept_nos: list[str]) -> dict[str, str]:
     """rcept_no 리스트로 캐시된 요약 일괄 조회."""
     if not rcept_nos:
         return {}
-    placeholders = ",".join(["?"] * len(rcept_nos))
+    placeholders = ",".join(["%s"] * len(rcept_nos))
     with _conn() as con:
         rows = con.execute(
             f"SELECT rcept_no, summary FROM disclosure_summary WHERE rcept_no IN ({placeholders})",
             rcept_nos,
         ).fetchall()
-    return {r[0]: r[1] for r in rows}
+    return {r["rcept_no"]: r["summary"] for r in rows}
 
 
 def save_disclosure_summary(rcept_no: str, summary: str) -> None:
@@ -572,6 +619,49 @@ def save_disclosure_summary(rcept_no: str, summary: str) -> None:
         return
     with _conn() as con:
         con.execute(
-            "INSERT OR REPLACE INTO disclosure_summary(rcept_no, summary) VALUES(?, ?)",
+            """INSERT INTO disclosure_summary(rcept_no, summary) VALUES(%s, %s)
+               ON CONFLICT(rcept_no) DO UPDATE SET summary=excluded.summary""",
             (rcept_no, summary),
         )
+
+
+# ─── 팩트체크 결과 영속 ────────────────────────────────────────────────────────
+
+def save_factcheck_results(upload_id: str, claims: list[dict]) -> None:
+    """업로드별 팩트체크 결과 저장 (기존 결과는 교체)."""
+    if not upload_id:
+        return
+    now = _kst_now()
+    with _conn() as con:
+        con.execute("DELETE FROM factcheck_results WHERE upload_id=%s", (upload_id,))
+        if claims:
+            con.cursor().executemany(
+                """INSERT INTO factcheck_results (upload_id, claim, verdict, reasoning, created_at)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                [(upload_id, c.get("claim", ""), c.get("verdict", "근거없음"),
+                  c.get("reasoning", ""), now) for c in claims],
+            )
+
+
+def get_factcheck_results(upload_id: str) -> list[dict]:
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT claim, verdict, reasoning, created_at FROM factcheck_results WHERE upload_id=%s ORDER BY id",
+            (upload_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_verified_claims(upload_ids: list[str]) -> list[dict]:
+    """여러 업로드의 '지지' 판정 주장만 반환 (채팅 답변 그라운딩용)."""
+    if not upload_ids:
+        return []
+    placeholders = ",".join(["%s"] * len(upload_ids))
+    with _conn() as con:
+        rows = con.execute(
+            f"""SELECT claim, verdict FROM factcheck_results
+                WHERE upload_id IN ({placeholders}) AND verdict IN ('지지', '모순')
+                ORDER BY id""",
+            upload_ids,
+        ).fetchall()
+    return [dict(r) for r in rows]

@@ -112,7 +112,31 @@ def retrieve_for_answer(
     distances = [picked_dist[i] for i in order]
 
     rag_ctx = build_context(chunks, metadatas) if chunks else ""
-    parts = [p for p in [profile_context, rag_ctx] if p]
+
+    # 검색된 업로드 자료의 팩트체크 판정을 컨텍스트에 보강 (지지=DART 검증됨 / 모순)
+    verdict_ctx = ""
+    upload_ids = list({
+        m.get("upload_id") for m in metadatas
+        if m.get("source_type") == "user_upload" and m.get("upload_id")
+    })
+    if upload_ids:
+        try:
+            from app.db.trade_db import get_verified_claims
+            verified = get_verified_claims(upload_ids)
+            if verified:
+                supported = [v["claim"] for v in verified if v["verdict"] == "지지"]
+                contradicted = [v["claim"] for v in verified if v["verdict"] == "모순"]
+                lines = []
+                if supported:
+                    lines.append("DART 공식자료로 검증된(지지) 주장:\n" + "\n".join(f"- {c}" for c in supported[:5]))
+                if contradicted:
+                    lines.append("DART 공식자료와 모순된 주장 (인용 주의):\n" + "\n".join(f"- {c}" for c in contradicted[:5]))
+                if lines:
+                    verdict_ctx = "[업로드 자료 팩트체크 결과]\n" + "\n\n".join(lines)
+        except Exception:
+            pass
+
+    parts = [p for p in [profile_context, verdict_ctx, rag_ctx] if p]
     full_ctx = "\n\n---\n\n".join(parts) if parts else ""
 
     if full_ctx:

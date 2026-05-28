@@ -15,7 +15,7 @@ httpx>=0.28.1
 pdfplumber==0.11.4
 
 # 벡터 DB + 임베딩
-chromadb==0.5.20
+pgvector==0.4.2
 google-genai==2.6.0
 
 # 주식 시세 (한국거래소)
@@ -29,3 +29,6 @@ PyJWT>=2.8.0
 
 # OpenAI
 openai>=1.30.0
+
+psycopg[binary]==3.3.4
+psycopg_pool==3.3.1
