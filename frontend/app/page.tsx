@@ -81,11 +81,25 @@ export default function Home() {
     const kospi = wsIndices["KOSPI"];
     const kosdaq = wsIndices["KOSDAQ"];
     if (!kospi && !kosdaq) return;
-    setIndices(prev => ({
-      ...prev,
-      ...(kospi ? { KOSPI: { name: "KOSPI", value: kospi.current_price, change: kospi.change_amount, change_pct: kospi.change_pct } } : {}),
-      ...(kosdaq ? { KOSDAQ: { name: "KOSDAQ", value: kosdaq.current_price, change: kosdaq.change_amount, change_pct: kosdaq.change_pct } } : {}),
-    }));
+    setIndices(prev => {
+      // KIS WS가 가끔 잘못된 필드(거래량 등)를 지수값으로 보냄 → REST 기준값 대비
+      // 편차 25% 초과 또는 등락률 ±30% 초과면 파싱 오류로 보고 무시.
+      const sane = (name: string, rt: { current_price: number; change_pct: number }) => {
+        if (!isFinite(rt.current_price) || rt.current_price <= 0) return false;
+        if (Math.abs(rt.change_pct) > 30) return false;
+        const base = prev[name]?.value;
+        if (base && base > 0 && Math.abs(rt.current_price - base) / base > 0.25) return false;
+        return true;
+      };
+      const next = { ...prev };
+      if (kospi && sane("KOSPI", kospi)) {
+        next.KOSPI = { name: "KOSPI", value: kospi.current_price, change: kospi.change_amount, change_pct: kospi.change_pct };
+      }
+      if (kosdaq && sane("KOSDAQ", kosdaq)) {
+        next.KOSDAQ = { name: "KOSDAQ", value: kosdaq.current_price, change: kosdaq.change_amount, change_pct: kosdaq.change_pct };
+      }
+      return next;
+    });
   }, [wsIndices]);
 
   // 알림 폴링 (2분마다)
