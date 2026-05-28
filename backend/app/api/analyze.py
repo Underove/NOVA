@@ -4,6 +4,8 @@
 username 메타 필터로 본인 것만 검색 — 멀티유저 격리.
 출력은 브리핑과 동일하게 구조화 JSON + 참고 자료(출처) 목록.
 """
+import re
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
@@ -68,6 +70,33 @@ def _query_collection(collection, question: str, n: int, where: dict | None = No
 def _snip(text: str, n: int = 160) -> str:
     text = (text or "").strip().replace("\n", " ")
     return text[:n] + ("…" if len(text) > n else "")
+
+
+_WON_RE = re.compile(r"([0-9][0-9,]*)\s*원")
+
+
+def _humanize_won(text: str) -> str:
+    """원 단위 큰 금액을 '조/억' 한글 단위로 변환 (1억 미만·이미 단위 붙은 값은 그대로)."""
+    if not text:
+        return text
+
+    def repl(m):
+        digits = m.group(1).replace(",", "")
+        if not digits.isdigit():
+            return m.group(0)
+        n = int(digits)
+        if n < 100_000_000:  # 1억 미만은 원 단위 유지
+            return m.group(0)
+        jo, rem = divmod(n, 1_000_000_000_000)
+        eok = rem // 100_000_000
+        out = ""
+        if jo:
+            out += f"{jo:,}조"
+        if eok:
+            out += (" " if out else "") + f"{eok:,}억"
+        return (out + "원") if out else m.group(0)
+
+    return _WON_RE.sub(repl, text)
 
 
 def _build_sources(
@@ -211,6 +240,13 @@ def analyze_portfolio(body: AnalyzeRequest | None = None, username: str = Depend
     summary = sections.get("summary") if isinstance(sections, dict) else None
     holdings = sections.get("holdings") if isinstance(sections, dict) else None
     action_items = sections.get("action_items") if isinstance(sections, dict) else None
+
+    # 큰 원 단위 금액 → 조/억 한글 단위로 가독성 개선
+    summary = _humanize_won(summary) if summary else summary
+    if isinstance(holdings, list):
+        for h in holdings:
+            if isinstance(h, dict) and isinstance(h.get("comment"), str):
+                h["comment"] = _humanize_won(h["comment"])
 
     return {
         "summary": summary or "분석을 생성하지 못했어요. 잠시 후 다시 시도해주세요.",
