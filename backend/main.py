@@ -9,6 +9,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
+# 에러 모니터링 — SENTRY_DSN 설정 시에만 활성 (미설정이면 dormant no-op)
+from app.config import settings as _settings  # noqa: E402
+
+if _settings.sentry_dsn:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=_settings.sentry_dsn,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        environment="production",
+    )
+
 from app.api import auth as auth_api  # noqa: E402
 from app.api import analyze as analyze_api  # noqa: E402
 from app.api import ask as ask_api  # noqa: E402
