@@ -136,10 +136,10 @@ def compute_signal(claim_verdicts: list[dict]) -> tuple[str, int]:
     return signal, score_int
 
 
-def _load_upload_text(upload_id: str) -> str:
-    """upload_id에 해당하는 청크들을 chunk_index 순으로 결합."""
+def _load_upload_text(upload_id: str, username: str) -> str:
+    """본인 upload_id에 해당하는 청크들을 chunk_index 순으로 결합 (멀티유저 격리)."""
     user_col = get_user_uploads_collection()
-    result = user_col.get(where={"upload_id": upload_id})
+    result = user_col.get(where={"upload_id": upload_id, "username": username})
     documents = result.get("documents") or []
     metadatas = result.get("metadatas") or []
     if not documents:
@@ -158,9 +158,9 @@ def _load_upload_text(upload_id: str) -> str:
     return text
 
 
-def factcheck_upload(upload_id: str) -> dict:
-    """업로드된 자료에 대해 팩트체크 파이프라인 실행."""
-    full_text = _load_upload_text(upload_id)
+def factcheck_upload(upload_id: str, username: str) -> dict:
+    """본인 업로드 자료에 대해 팩트체크 파이프라인 실행 (멀티유저 격리)."""
+    full_text = _load_upload_text(upload_id, username)
 
     extracted = extract_companies_and_claims(full_text)
     company_names = extracted["companies"]
@@ -192,7 +192,7 @@ def factcheck_upload(upload_id: str) -> dict:
     # 결과 영속 — 채팅 답변 그라운딩 + 투명성 (실패해도 응답엔 영향 없음)
     try:
         from app.db.trade_db import save_factcheck_results
-        save_factcheck_results(upload_id, claim_results)
+        save_factcheck_results(upload_id, claim_results, username)
     except Exception:
         pass
 

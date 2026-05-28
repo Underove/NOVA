@@ -67,11 +67,15 @@ def get_download_url(path: str, expires_in: int = 3600) -> str | None:
         return None
 
 
-def delete_original(path: str) -> None:
+def delete_original(path: str) -> bool:
+    """원본 파일 삭제. 성공(또는 삭제할 것 없음) 시 True, 실패 시 False."""
     if not _enabled() or not path:
-        return
+        return True
     url = f"{settings.supabase_url}/storage/v1/object/{_BUCKET}/{path}"
     try:
-        httpx.request("DELETE", url, headers=_headers(), timeout=15)
+        r = httpx.request("DELETE", url, headers=_headers(), timeout=15)
+        r.raise_for_status()
+        return True
     except Exception as e:
         logger.warning("Storage 삭제 실패 (%s): %s", path, e)
+        return False

@@ -59,10 +59,10 @@ def build_context(chunks: list[str], metadatas: list[dict]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def _query_collection(collection, question: str, n: int) -> tuple[list[str], list[dict], list[float]]:
+def _query_collection(collection, question: str, n: int, where: dict | None = None) -> tuple[list[str], list[dict], list[float]]:
     if collection.count() == 0:
         return [], [], []
-    r = collection.query(query_texts=[question], n_results=n)
+    r = collection.query(query_texts=[question], n_results=n, where=where)
     return (
         r.get("documents", [[]])[0],
         r.get("metadatas", [[]])[0],
@@ -74,10 +74,14 @@ def retrieve_for_answer(
     question: str,
     n_chunks: int = 5,
     profile_context: str | None = None,
+    username: str | None = None,
 ) -> dict:
     """검색·정렬·프롬프트 빌드만 수행. 답변 생성은 호출자가 처리.
 
     반환값: { prompt, sources, companies_synced, chunks, metadatas }
+
+    username: 업로드 자료 검색을 해당 사용자로 한정 (멀티유저 격리). None이면
+    업로드 검색 생략 — 남의 자료 누수 방지.
     """
     newly_synced: list[dict] = []
     try:
@@ -85,9 +89,12 @@ def retrieve_for_answer(
     except Exception:
         pass
 
-    user_chunks, user_meta, user_dist = _query_collection(
-        get_user_uploads_collection(), question, n_chunks
-    )
+    if username:
+        user_chunks, user_meta, user_dist = _query_collection(
+            get_user_uploads_collection(), question, n_chunks, where={"username": username}
+        )
+    else:
+        user_chunks, user_meta, user_dist = [], [], []
     trusted_chunks, trusted_meta, trusted_dist = _query_collection(
         get_trusted_collection(), question, n_chunks
     )
@@ -170,7 +177,9 @@ def answer_with_context(
     profile_context: str | None = None,
 ) -> dict:
     """동기 RAG + tool-calling LLM 답변."""
-    retrieved = retrieve_for_answer(question, n_chunks=n_chunks, profile_context=profile_context)
+    retrieved = retrieve_for_answer(
+        question, n_chunks=n_chunks, profile_context=profile_context, username=username
+    )
     answer = generate_with_tools(
         retrieved["prompt"],
         system_instruction=SYSTEM_INSTRUCTION,

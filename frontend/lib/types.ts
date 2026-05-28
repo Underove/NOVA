@@ -19,18 +19,6 @@ export type UploadState =
   | { kind: "done"; result: UploadResult }
   | { kind: "error"; message: string };
 
-export type SearchMatch = {
-  text: string;
-  distance: number;
-  metadata: Record<string, unknown>;
-};
-
-export type SearchState =
-  | { kind: "idle" }
-  | { kind: "searching" }
-  | { kind: "done"; query: string; matches: SearchMatch[] }
-  | { kind: "error"; message: string };
-
 export type Source = { snippet: string; label: string; distance: number };
 
 export type CompanySynced = { corp_name: string; stock_code: string };
@@ -217,6 +205,7 @@ export type AnalysisResult = {
   prices_loaded: number;
   dart_chunks: number;
   upload_chunks: number;
+  news_loaded?: number;
 };
 
 export type CrossStatus = "golden" | "dead" | "above" | "below" | "none";

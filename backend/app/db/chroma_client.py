@@ -119,16 +119,20 @@ class PgVectorCollection:
                 rows,
             )
 
-    def query(self, query_texts: list[str], n_results: int = 5) -> dict:
-        """ChromaDB query 형식 반환: {documents:[[...]], metadatas:[[...]], distances:[[...]]}."""
+    def query(self, query_texts: list[str], n_results: int = 5, where: dict | None = None) -> dict:
+        """ChromaDB query 형식 반환: {documents:[[...]], metadatas:[[...]], distances:[[...]]}.
+
+        where: metadata 필터 (예: {"username": ...}). 멀티유저 격리에 필수.
+        """
         qvec = embed_texts(list(query_texts))[0]
+        where_sql, where_params = _where_sql(self.name, where)
         with _get_pool().connection() as con:
             _register(con)
             rows = con.execute(
-                """SELECT document, metadata, embedding <=> %s AS dist
-                   FROM rag_vectors WHERE collection = %s
+                f"""SELECT document, metadata, embedding <=> %s AS dist
+                   FROM rag_vectors WHERE {where_sql}
                    ORDER BY dist LIMIT %s""",
-                (Vector(qvec), self.name, n_results),
+                (Vector(qvec), *where_params, n_results),
             ).fetchall()
         docs = [r["document"] for r in rows]
         metas = [r["metadata"] or {} for r in rows]

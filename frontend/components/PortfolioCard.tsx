@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Briefcase, PieChart, Star } from "lucide-react";
+import { Briefcase, PieChart, Sparkles, Star } from "lucide-react";
 
 import {
   addPortfolioItem,
@@ -27,6 +27,7 @@ import { haptic } from "../hooks/useHaptic";
 import { showToast } from "../hooks/useToast";
 import { StockDetailModal } from "./StockDetailModal";
 import { CompareModal } from "./CompareModal";
+import { PortfolioAnalyzeModal } from "./PortfolioAnalyzeModal";
 import TradeJournal from "./TradeJournal";
 
 type Tab = "stocks" | "watchlist" | "allocation" | "journal";
@@ -1216,6 +1217,7 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareCode, setCompareCode] = useState("");
   const [compareName, setCompareName] = useState("");
+  const [analyzeOpen, setAnalyzeOpen] = useState(false);
 
   const stockCodes = useMemo(() => items.map(i => i.stock_code), [items]);
   const realtimePrices = useRealtimePrice(stockCodes);
@@ -1315,6 +1317,25 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
       {activeTab === "stocks" && (
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
           {items.length > 0 && <SummaryCard items={items} prices={mergedPrices} />}
+
+          {items.length > 0 && (
+            <div style={{ padding: "0 16px 2px" }}>
+              <button
+                onClick={() => { haptic("light"); setAnalyzeOpen(true); }}
+                className="tap-feedback"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  width: "100%", padding: "10px",
+                  background: "var(--surface)", color: "var(--primary)",
+                  border: "1px solid var(--sep)", borderRadius: 13,
+                  fontSize: 13, fontWeight: 700, letterSpacing: "-0.01em",
+                }}
+              >
+                <Sparkles size={14} strokeWidth={2.2} />
+                AI 포트폴리오 분석
+              </button>
+            </div>
+          )}
 
           <div style={{ padding: "8px 16px 10px" }}>
             {!showAdd ? (
@@ -1430,6 +1451,8 @@ export function PortfolioCard({ onPortfolioChange }: { onPortfolioChange?: () =>
           onClose={() => setCompareOpen(false)}
         />
       )}
+
+      {analyzeOpen && <PortfolioAnalyzeModal onClose={() => setAnalyzeOpen(false)} />}
     </div>
   );
 }

@@ -132,6 +132,7 @@ _SCHEMA = [
     """CREATE TABLE IF NOT EXISTS factcheck_results (
         id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         upload_id   TEXT    NOT NULL,
+        username    TEXT    NOT NULL DEFAULT '',
         claim       TEXT    NOT NULL,
         verdict     TEXT    NOT NULL,
         reasoning   TEXT,
@@ -150,6 +151,7 @@ def init_db() -> None:
             "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS disclosure_30d INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS volume_ratio DOUBLE PRECISION",
             "ALTER TABLE screener_snapshot ADD COLUMN IF NOT EXISTS foreign_net_buy BIGINT",
+            "ALTER TABLE factcheck_results ADD COLUMN IF NOT EXISTS username TEXT NOT NULL DEFAULT ''",
         ):
             try:
                 con.execute(ddl)
@@ -649,18 +651,21 @@ def save_disclosure_summary(rcept_no: str, summary: str) -> None:
 
 # ─── 팩트체크 결과 영속 ────────────────────────────────────────────────────────
 
-def save_factcheck_results(upload_id: str, claims: list[dict]) -> None:
-    """업로드별 팩트체크 결과 저장 (기존 결과는 교체)."""
+def save_factcheck_results(upload_id: str, claims: list[dict], username: str) -> None:
+    """본인 업로드별 팩트체크 결과 저장 (기존 결과는 교체)."""
     if not upload_id:
         return
     now = _kst_now()
     with _conn() as con:
-        con.execute("DELETE FROM factcheck_results WHERE upload_id=%s", (upload_id,))
+        con.execute(
+            "DELETE FROM factcheck_results WHERE upload_id=%s AND username=%s",
+            (upload_id, username),
+        )
         if claims:
             con.cursor().executemany(
-                """INSERT INTO factcheck_results (upload_id, claim, verdict, reasoning, created_at)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                [(upload_id, c.get("claim", ""), c.get("verdict", "근거없음"),
+                """INSERT INTO factcheck_results (upload_id, username, claim, verdict, reasoning, created_at)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                [(upload_id, username, c.get("claim", ""), c.get("verdict", "근거없음"),
                   c.get("reasoning", ""), now) for c in claims],
             )
 

@@ -30,7 +30,6 @@ from app.api import market as market_api  # noqa: E402
 from app.api import portfolio as portfolio_api  # noqa: E402
 from app.api import realtime as realtime_api  # noqa: E402
 from app.api import technical as technical_api  # noqa: E402
-from app.api import search as search_api  # noqa: E402
 from app.api import upload as upload_api  # noqa: E402
 from app.api import notifications as notifications_api  # noqa: E402
 from app.api import watchlist as watchlist_api  # noqa: E402
@@ -160,7 +159,6 @@ app.include_router(analyze_api.router, prefix="/api", tags=["analyze"])
 app.include_router(realtime_api.router, prefix="/api", tags=["realtime"])
 app.include_router(technical_api.router, prefix="/api", tags=["technical"])
 app.include_router(upload_api.router, prefix="/api", tags=["upload"])
-app.include_router(search_api.router, prefix="/api", tags=["search"])
 app.include_router(ask_api.router, prefix="/api", tags=["ask"])
 app.include_router(dart_api.router, prefix="/api", tags=["dart"])
 app.include_router(factcheck_api.router, prefix="/api", tags=["factcheck"])

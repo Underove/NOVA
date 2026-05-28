@@ -151,6 +151,7 @@ async def ask_stream(
                 req.question,
                 n_chunks=req.n_chunks,
                 profile_context=profile_ctx,
+                username=username,
             )
         except Exception as e:
             yield _sse("error", {"message": f"자료 검색 실패: {type(e).__name__}"})

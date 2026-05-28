@@ -1,19 +1,19 @@
-"""포트폴리오 + DART 공시 + 업로드 자료 교차 분석 엔드포인트."""
-import json
-from pathlib import Path
+"""포트폴리오 + DART 공시 + 업로드 자료 교차 분석 엔드포인트.
 
-from fastapi import APIRouter
+지갑(보유종목)은 portfolio._load(username)로 본인 것만, 업로드 자료는
+username 메타 필터로 본인 것만 검색 — 멀티유저 격리.
+"""
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.collectors.krx import get_current_price
+from app.api.auth import get_current_user
+from app.api.portfolio import _get_price, _load
 from app.collectors.web_search import news_to_context, search_news
 from app.db.chroma_client import get_trusted_collection, get_user_uploads_collection
 from app.llm.gemini import generate_answer
 from app.rag.qa import build_context
 
 router = APIRouter()
-
-PORTFOLIO_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "portfolio.json"
 
 ANALYZE_SYSTEM = """역할: 개인 투자자 포트폴리오 교차 분석가.
 
@@ -46,27 +46,20 @@ ANALYZE_SYSTEM = """역할: 개인 투자자 포트폴리오 교차 분석가.
 - 미래 수익 보장·매수/매도 추천 금지."""
 
 
-def _load_portfolio() -> list[dict]:
-    if not PORTFOLIO_FILE.exists():
-        return []
-    with open(PORTFOLIO_FILE, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def _fetch_prices(items: list[dict]) -> dict[str, dict]:
     prices = {}
     for item in items:
         try:
-            prices[item["stock_code"]] = get_current_price(item["stock_code"])
+            prices[item["stock_code"]] = _get_price(item["stock_code"])
         except Exception:
             pass
     return prices
 
 
-def _query_collection(collection, question: str, n: int) -> tuple[list[str], list[dict]]:
+def _query_collection(collection, question: str, n: int, where: dict | None = None) -> tuple[list[str], list[dict]]:
     if collection.count() == 0:
         return [], []
-    r = collection.query(query_texts=[question], n_results=n)
+    r = collection.query(query_texts=[question], n_results=n, where=where)
     return (
         r.get("documents", [[]])[0],
         r.get("metadatas", [[]])[0],
@@ -78,18 +71,18 @@ class AnalyzeRequest(BaseModel):
 
 
 @router.post("/analyze")
-def analyze_portfolio(body: AnalyzeRequest | None = None):
-    """포트폴리오 + 공시 + 업로드 자료를 종합해 AI 분석 리포트 생성."""
+def analyze_portfolio(body: AnalyzeRequest | None = None, username: str = Depends(get_current_user)):
+    """본인 포트폴리오 + 공시 + 업로드 자료를 종합해 AI 분석 리포트 생성."""
     question = body.question if body else "내 포트폴리오를 분석해줘"
 
-    # 1. 포트폴리오 + 시세 수집
-    items = _load_portfolio()
+    # 1. 본인 포트폴리오 + 시세 수집
+    items = _load(username)
     prices = _fetch_prices(items) if items else {}
 
     portfolio_lines = []
     for item in items:
         p = prices.get(item["stock_code"])
-        if p:
+        if p and p.get("current_price"):
             pct = round((p["current_price"] - item["buy_price"]) / item["buy_price"] * 100, 2) if item["buy_price"] else 0
             sign = "+" if pct >= 0 else ""
             portfolio_lines.append(
@@ -105,9 +98,11 @@ def analyze_portfolio(body: AnalyzeRequest | None = None):
 
     portfolio_text = "\n".join(portfolio_lines) if portfolio_lines else "포트폴리오가 비어 있습니다."
 
-    # 2. 업로드 자료에서 투자 기준 검색
+    # 2. 본인 업로드 자료에서 투자 기준 검색 (username 격리)
     analyze_query = f"투자 기준 종목 선정 {question}"
-    user_chunks, user_meta = _query_collection(get_user_uploads_collection(), analyze_query, 5)
+    user_chunks, user_meta = _query_collection(
+        get_user_uploads_collection(), analyze_query, 5, where={"username": username}
+    )
 
     # 3. DART 공시에서 보유 종목 관련 정보 검색
     company_names = " ".join(i["corp_name"] for i in items) if items else question

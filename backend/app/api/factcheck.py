@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.api.auth import get_current_user
 from app.rag.factcheck import factcheck_upload
 
 router = APIRouter()
@@ -37,9 +38,9 @@ class FactcheckResponse(BaseModel):
 
 
 @router.post("/factcheck/run", response_model=FactcheckResponse)
-def run_factcheck(req: FactcheckRequest) -> FactcheckResponse:
+def run_factcheck(req: FactcheckRequest, username: str = Depends(get_current_user)) -> FactcheckResponse:
     try:
-        result = factcheck_upload(req.upload_id)
+        result = factcheck_upload(req.upload_id, username)
     except ValueError as e:
         raise HTTPException(404, str(e))
     except Exception as e:

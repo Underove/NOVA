@@ -120,9 +120,10 @@ def delete_upload(upload_id: str, username: str = Depends(get_current_user)):
     if not ids:
         raise HTTPException(404, "해당 자료를 찾을 수 없습니다.")
     storage_path = (metas[0] or {}).get("storage_path") if metas else ""
+    # 원본 먼저 삭제 — 실패 시 벡터는 남겨 재시도 가능 (orphan 방지)
+    if storage_path and not delete_original(storage_path):
+        raise HTTPException(503, "원본 파일 삭제에 실패했어요. 잠시 후 다시 시도해주세요.")
     collection.delete(ids=ids)
-    if storage_path:
-        delete_original(storage_path)
     return {"ok": True, "deleted_chunks": len(ids)}
 
 

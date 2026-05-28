@@ -18,7 +18,6 @@ import type {
   SavedFilter,
   ScreenerItem,
   ScreenerParams,
-  SearchMatch,
   SearchResult,
   ServiceInfo,
   ShortSellingData,
@@ -104,12 +103,6 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   }
   return res.json();
 }
-
-export const search = (query: string, n_results = 5) =>
-  postJSON<{ query: string; matches: SearchMatch[] }>("/api/search", {
-    query,
-    n_results,
-  });
 
 export type StockInsight = { text: string; tone: "positive" | "negative" | "neutral" };
 
