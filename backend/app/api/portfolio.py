@@ -792,29 +792,49 @@ def get_fundamental(stock_code: str):
 
 @router.get("/portfolio/trading-flow/{stock_code}")
 def get_trading_flow(stock_code: str, days: int = 5):
-    """외국인·기관 순매수 흐름 (최근 N 거래일) — pykrx."""
-    import datetime
-    from pykrx import stock as pykrx_stock
+    """외국인·기관 순매수 흐름 (최근 N 거래일).
 
-    _kst = datetime.timezone(datetime.timedelta(hours=9))
-    _today = datetime.datetime.now(_kst).date()
-    today = _today.strftime("%Y%m%d")
-    start = (_today - datetime.timedelta(days=days * 3)).strftime("%Y%m%d")
+    KRX(pykrx)가 로그인 필수로 막혀, Naver 외국인·기관 페이지를 스크래핑한다.
+    Naver는 순매매'량'(주)만 제공하므로 종가를 곱해 거래대금(원)으로 근사 — 웹/앱의
+    기존 억·조 포맷과 단위를 맞추기 위함."""
+    import re
 
+    import httpx
+
+    url = f"https://finance.naver.com/item/frgn.naver?code={stock_code}"
+    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com/"}
     try:
-        df = pykrx_stock.get_market_trading_value_by_date(start, today, stock_code, detail=True)
-        if df is None or df.empty:
-            return {"flow": []}
-        df = df.tail(days)
-        result = []
-        for date, row in df.iterrows():
-            foreign_net = int(row.get("외국인합계", row.get("외국인", 0)))
-            institution_net = int(row.get("기관합계", row.get("기관", 0)))
-            date_str = date.strftime("%m/%d") if hasattr(date, "strftime") else str(date)[5:10]
-            result.append({"date": date_str, "foreign_net": foreign_net, "institution_net": institution_net})
-        return {"flow": result}
+        resp = httpx.get(url, headers=headers, timeout=10)
+        html = resp.content.decode("euc-kr", errors="ignore")
     except Exception:
         return {"flow": []}
+
+    def _num(cell: str) -> float:
+        txt = re.sub(r"<[^>]+>", "", cell).replace(",", "").replace("%", "").strip()
+        try:
+            return float(txt)
+        except ValueError:
+            return 0.0
+
+    # 데이터 행: 날짜 셀(YYYY.MM.DD) 다음에 종가·전일비·등락률·거래량·기관·외국인·보유주수·보유율 순.
+    rows = re.findall(r"(\d{4})\.(\d{2})\.(\d{2})</span></td>(.*?)</tr>", html, re.S)
+    flow: list[dict] = []
+    for _y, mo, d, body in rows:
+        cells = re.findall(r'<td[^>]*class="num"[^>]*>(.*?)</td>', body, re.S)
+        if len(cells) < 6:
+            continue
+        close = _num(cells[0])
+        institution_sh = _num(cells[4])
+        foreign_sh = _num(cells[5])
+        flow.append({
+            "date": f"{mo}/{d}",
+            "foreign_net": int(foreign_sh * close),
+            "institution_net": int(institution_sh * close),
+        })
+        if len(flow) >= days:
+            break
+    flow.reverse()  # 오래된→최신 (기존 동작과 동일)
+    return {"flow": flow}
 
 
 @router.get("/portfolio/news/{stock_code}")
